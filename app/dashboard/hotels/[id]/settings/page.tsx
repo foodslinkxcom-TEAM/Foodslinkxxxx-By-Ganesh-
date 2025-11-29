@@ -246,12 +246,12 @@ export default function SettingsPage() {
           >
             Profile
           </button>
-          <button
+          {/* <button
             className={`px-6 py-3 font-semibold text-lg ${activeTab === 'location' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}`}
             onClick={() => setActiveTab('location')}
           >
             Location
-          </button>
+          </button> */}
           <button
             className={`px-6 py-3 font-semibold text-lg ${activeTab === 'plan' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}`}
             onClick={() => setActiveTab('plan')}

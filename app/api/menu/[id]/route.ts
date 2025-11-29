@@ -3,16 +3,39 @@ import Menu from "@/lib/models/menu";
 import Order from "@/lib/models/Order";
 import { NextResponse } from "next/server";
 
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await connectDB();
+    const { id } = params;
+    const menu = await Menu.findById(id);
+
+    if (menu) {
+      return NextResponse.json(
+        { success: false, message: "Menu not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: menu }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const connection = await connectDB();
   const session = await connection.startSession();
   session.startTransaction();
 
-  try {
-    const { id } = params;
+  const { id } = params;
 
     // Check if menu item exists and is not soft-deleted
     const menuItem = await Menu.findById(id).session(session);
+
+  try {
     if (!menuItem) {
       await session.abortTransaction();
       return NextResponse.json(

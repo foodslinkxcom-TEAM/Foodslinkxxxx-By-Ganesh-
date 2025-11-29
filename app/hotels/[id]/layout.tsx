@@ -129,7 +129,7 @@ export default function HotelOrderLayout({ children }: Props) {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-14 w-14 border-4 border-primary border-t-transparent mx-auto mb-5"></div>
-          <p className="text-lg text-primary font-medium">Verifying your location and table...</p>
+          <p className="text-lg text-primary font-medium">Verifying your table...</p>
         </div>
       </div>
     )

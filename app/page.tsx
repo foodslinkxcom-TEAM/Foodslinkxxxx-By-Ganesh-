@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import {
   BookOpen,
   Users,
@@ -9,296 +8,458 @@ import {
   CreditCard,
   PhoneCall,
   User,
+  ChefHat,
+  Utensils,
+  Clock,
+  MapPin,
+  Star,
+  Smartphone,
+  ArrowRight,
+  Menu,
+  X,
+  Search
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LandingPage() {
   const [hotels, setHotels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
+  // Handle scroll for navbar styling
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Fetch Logic
   useEffect(() => {
     const fetchHotels = async () => {
       try {
         const res = await fetch('/api/hotels');
-        if (!res.ok) {
-          throw new Error('Failed to fetch hotels');
-        }
+        if (!res.ok) throw new Error('Failed to fetch hotels');
         const data = await res.json();
-        // just show the first 4 hotels
         setHotels(data.slice(0, 4));
       } catch (error) {
         console.error(error);
+        // Fallback dummy data for preview purposes if API fails
+        setHotels([
+          { _id: 1, name: "The Red Dragon", address: "Downtown Spice St.", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800" },
+          { _id: 2, name: "Burger Bliss", address: "Market Square", image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800" },
+          { _id: 3, name: "Sushi Master", address: "Ocean Drive", image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&q=80&w=800" },
+          { _id: 4, name: "Pasta House", address: "Little Italy", image: "https://images.unsplash.com/photo-1481931041525-496883552d51?auto=format&fit=crop&q=80&w=800" },
+        ]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchHotels();
   }, []);
+
   return (
-    <main className="min-h-screen flex flex-col font-sans bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 text-gray-900 relative overflow-hidden bg-pattern">
-      {/* Advanced Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full mix-blend-multiply filter blur-2xl opacity-30 float morph"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-tr from-yellow-400 to-orange-500 rounded-full mix-blend-multiply filter blur-2xl opacity-25 float morph animation-delay-2000"></div>
-        <div className="absolute top-40 left-1/2 w-96 h-96 bg-gradient-to-bl from-pink-400 to-rose-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 float morph animation-delay-4000"></div>
-        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-15 float animation-delay-6000"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 bg-gradient-to-l from-emerald-400 to-teal-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 float animation-delay-8000"></div>
+    <main className="min-h-screen flex flex-col font-sans text-gray-900 relative overflow-hidden bg-orange-50/30 selection:bg-red-200 selection:text-red-900">
+      
+      {/* Custom Styles for Animation */}
+      <style jsx>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+          100% { transform: translateY(0px); }
+        }
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+      `}</style>
+
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-50 via-white to-red-50 -z-20"></div>
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-red-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-orange-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Subtle noise texture */}
-      <div className="absolute inset-0 bg-noise pointer-events-none"></div>
-      {/* Header */}
-      <header className="flex items-center justify-between py-6 px-4 sm:px-6 glass backdrop-blur-xl sticky top-0 z-50 fade-in shadow-luxury">
-        <div className="text-3xl font-bold gradient-text text-shadow">FoodsLinkx</div>
-        <nav className="hidden md:flex space-x-8 text-gray-700">
-          <a href="https://foodslinkx.com/about" className="hover:text-indigo-600 transition-colors duration-300 relative group">
-            About Us
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="https://foodslinkx.com/pricing" className="hover:text-indigo-600 transition-colors duration-300 relative group">
-            Pricing
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="https://blog.foodslinkx.com/" className="hover:text-indigo-600 transition-colors duration-300 relative group">
-            Blog
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-          <a href="https://foodslinkx.com/contact" className="hover:text-indigo-600 transition-colors duration-300 relative group">
-            Contact
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 group-hover:w-full transition-all duration-300"></span>
-          </a>
-        </nav>
-        <div className="hidden md:flex space-x-4 items-center">
-          {/* Dark Mode Toggle */}
-          <button className="p-3 glass rounded-xl hover:bg-white/20 transition-all duration-300 group">
-            <svg className="w-5 h-5 text-gray-700 group-hover:text-indigo-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-          </button>
+      {/* --- HEADER --- */}
+      <header className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? "bg-white/80 backdrop-blur-md shadow-sm py-4" : "bg-transparent py-6"}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform">
+              <ChefHat size={24} />
+            </div>
+            <span className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-orange-500">
+              FoodsLinkx
+            </span>
+          </Link>
 
-          <Link href="/auth/login" className="flex items-center space-x-2 px-6 py-3 glass rounded-xl hover:bg-white/20 transition-all duration-300 group">
-            <span className="group-hover:scale-110 transition-transform duration-300">Login</span>
-          </Link>
-          <Link href="/auth/login" className="px-6 py-3 btn-gradient text-white rounded-xl font-semibold shadow-luxury hover:shadow-glow transition-all duration-300 transform hover:scale-105 inline-block">
-            Get Started
-          </Link>
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center space-x-8 text-sm font-semibold text-gray-600">
+            {/* Defined Navigation Items */}
+{[
+  { name: 'About Us', href: 'https://foodslinkx.com/about' },
+  { name: 'Pricing', href: 'https://foodslinkx.com/pricing' },
+  { name: 'Blog', href: 'https://blog.foodslinkx.com' } // External link example
+].map((item) => (
+  <Link 
+    key={item.name} 
+    href={item.href} 
+    className="hover:text-red-600 transition-colors relative group"
+  >
+    {item.name}
+    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-red-500 transition-all duration-300 group-hover:w-full"></span>
+  </Link>
+))}
+          </nav>
+
+          {/* Actions */}
+          <div className="hidden md:flex items-center space-x-4">
+            {/* <button className="p-2 text-gray-500 hover:text-red-600 transition-colors">
+              <Search size={20} />
+            </button> */}
+            <Link href="/auth/login" className="text-gray-900 font-semibold hover:text-red-600 transition-colors">
+              Log in
+            </Link>
+            <Link href="/auth/register" className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold shadow-lg shadow-red-200 transition-all hover:shadow-red-300 hover:-translate-y-0.5 active:translate-y-0">
+              Get Started
+            </Link>
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button className="md:hidden text-gray-700" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
         </div>
 
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 glass rounded-xl hover:bg-white/20 transition-all duration-300"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-          </svg>
-        </button>
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl md:hidden flex flex-col p-6 space-y-4 animate-in slide-in-from-top-5">
+            {['About Us', 'Menu', 'Pricing', 'Blog'].map((item) => (
+              <a key={item} href="#" className="text-lg font-medium text-gray-700 hover:text-red-600">
+                {item}
+              </a>
+            ))}
+            <hr />
+            <Link href="/auth/login" className="text-center py-3 w-full border border-gray-200 rounded-lg font-semibold">Log in</Link>
+            <Link href="/auth/register" className="text-center py-3 w-full bg-red-600 text-white rounded-lg font-semibold">Sign Up Free</Link>
+          </div>
+        )}
       </header>
 
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="md:hidden glass backdrop-blur-xl mx-4 sm:mx-6 rounded-xl mt-2 p-4 shadow-luxury">
-          <nav className="flex flex-col space-y-4 text-gray-700">
-            <a href="https://foodslinkx.com/about" className="hover:text-indigo-600 transition-colors duration-300 py-2">
-              About Us
-            </a>
-            <a href="https://foodslinkx.com/pricing" className="hover:text-indigo-600 transition-colors duration-300 py-2">
-              Pricing
-            </a>
-            <a href="https://blog.foodslinkx.com/" className="hover:text-indigo-600 transition-colors duration-300 py-2">
-              Blog
-            </a>
-            <a href="https://foodslinkx.com/contact" className="hover:text-indigo-600 transition-colors duration-300 py-2">
-              Contact
-            </a>
-            <div className="border-t border-gray-200 pt-4 mt-4 space-y-4">
-              <Link href="/auth/login" className="block w-full text-center py-2 glass rounded-xl hover:bg-white/20 transition-all duration-300">
-                Login
-              </Link>
-              <Link href="/auth/login" className="w-full py-2 btn-gradient text-white rounded-xl font-semibold inline-block text-center">
-                Get Started
-              </Link>
+      {/* --- HERO SECTION --- */}
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Left: Text */}
+          <div className="space-y-8 z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-bold animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+              #1 Food Delivery Platform
             </div>
-          </nav>
-        </div>
-      )}
-
-      {/* Hero */}
-      <section className="flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto px-4 sm:px-6 py-12 md:py-20 flex-grow relative z-10">
-        <div className="max-w-xl space-y-6 md:space-y-8 slide-up">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight">
-            Empower Your <span className="gradient-text">Productivity</span> with Our Platform
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
-            Streamline your workflow, collaborate effortlessly, and grow your business with the tools designed for success.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/auth/login" className="px-6 sm:px-8 py-3 sm:py-4 btn-gradient text-white rounded-xl font-semibold text-base sm:text-lg shadow-lg inline-block text-center">
-              Get Started Free
-            </Link>
-            <button className="px-6 sm:px-8 py-3 sm:py-4 glass rounded-xl font-semibold text-base sm:text-lg hover:bg-white/20 transition-all">
-              Watch Demo
-            </button>
-          </div>
-        </div>
-        <div className="mt-8 md:mt-0 md:ml-10">
-          <img
-            src="/Assets/hero.webp"
-            alt="Hero Image"
-            className="w-full max-w-sm md:max-w-lg h-auto object-cover rounded-lg"
-          />
-        </div>
-      </section>
-
-      {/* About Us */}
-      <section id="about" className="py-16 md:py-32 px-4 sm:px-6 max-w-7xl mx-auto text-center bg-gray-50 rounded-3xl">
-        <h2 className="text-3xl md:text-5xl font-bold mb-6 md:mb-8">About Us</h2>
-        <p className="max-w-4xl mx-auto text-gray-700 text-lg md:text-xl">
-          MyCompany is dedicated to helping professionals and teams maximize their efficiency. Founded by industry experts, we focus on delivering innovative solutions tailored to your needs.
-        </p>
-      </section>
-
-      {/* Our Partners */}
-      {/* Our Partners */}
-      <section className="py-12 md:py-20 bg-gray-50 rounded-3xl mx-4 my-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 md:sm:text-4xl">
-              Our Partners
-            </h2>
-            <p className="mt-4 text-base md:text-lg text-gray-500">
-              We are proud to partner with some of the best restaurants in the industry.
+            <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]">
+              Satisfy Your <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">
+                Cravings
+              </span> Today
+            </h1>
+            <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
+              Order from top local restaurants with the click of a button. Fresh ingredients, fast delivery, and the best culinary experiences in town.
             </p>
-          </div>
-          <div className="mt-8 md:mt-12">
-            {loading ? (
-              <div className="text-center">Loading partners...</div>
-            ) : (
-              <div className="grid gap-4 sm:gap-6 grid-cols-2 sm:grid-cols-4 lg:grid-cols-4">
-                {hotels.map((hotel, index) => (
-                  <div
-                    key={hotel._id}
-                    className={`glass rounded-2xl overflow-hidden card-hover bounce-in shadow-depth group cursor-pointer transform transition-all duration-500 hover:shadow-luxury stagger-${(index % 5) + 1}`}
-                    style={{ animationDelay: `${index * 0.15}s` }}
-                  >
-                    <div className="relative overflow-hidden">
-                      <img
-                        className="h-32 sm:h-40 md:h-48 w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
-                        src={hotel.image || '/placeholder.svg'}
-                        alt={`Image of ${hotel.name}`}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="p-4 sm:p-5 md:p-6 relative">
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors duration-300">{hotel.name}</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed mb-3 sm:mb-4">{hotel.address}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-indigo-600 group-hover:text-indigo-700 transition-colors duration-300">View Menu</span>
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-glow transition-all duration-300 transform group-hover:scale-110">
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-                    </div>
+            
+            {/* <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex rounded-full shadow-xl shadow-red-100 p-1.5 bg-white border border-gray-100 max-w-md w-full">
+                <input 
+                  type="text" 
+                  placeholder="Enter your delivery location..." 
+                  className="flex-1 px-4 outline-none text-gray-700 bg-transparent"
+                />
+                <button className="bg-red-600 hover:bg-red-700 text-white rounded-full px-8 py-3 font-semibold transition-colors">
+                  Find Food
+                </button>
+              </div>
+            </div> */}
+            
+            <div className="flex items-center gap-4 text-sm font-medium text-gray-500 pt-4">
+              <div className="flex -space-x-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                     <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" />
                   </div>
                 ))}
               </div>
-            )}
+              <p>Trusted by <span className="text-gray-900 font-bold">50k+</span> happy customers</p>
+            </div>
+          </div>
+
+          {/* Right: Image composition */}
+          <div className="relative z-10 lg:h-[600px] flex items-center justify-center">
+             {/* Decorative Circles */}
+             <div className="absolute inset-0 bg-gradient-to-tr from-red-100 to-orange-100 rounded-full opacity-30 transform scale-90 blur-2xl"></div>
+             
+             {/* Main Hero Image */}
+             <div className="relative w-full max-w-lg aspect-square animate-float">
+                <img 
+                  src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&q=80&w=1000" 
+                  alt="Delicious Food" 
+                  className="w-full h-full object-cover rounded-full shadow-2xl shadow-orange-200 border-8 border-white"
+                />
+                
+                {/* Floating Badge 1 */}
+                <div className="absolute top-10 -left-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce" style={{ animationDuration: '3s' }}>
+                  <div className="bg-green-100 p-2 rounded-full text-green-600">
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">Delivery</p>
+                    <p className="text-sm font-bold text-gray-900">30 Mins</p>
+                  </div>
+                </div>
+
+                {/* Floating Badge 2 */}
+                <div className="absolute bottom-20 -right-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>
+                  <div className="bg-yellow-100 p-2 rounded-full text-yellow-600">
+                    <Star size={20} fill="currentColor" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">Rating</p>
+                    <p className="text-sm font-bold text-gray-900">4.9/5</p>
+                  </div>
+                </div>
+             </div>
           </div>
         </div>
       </section>
 
-      {/* Product Features */}
-      <section id="products" className="hidden md:block glass py-12 md:py-20 px-4 sm:px-6 max-w-7xl mx-auto rounded-3xl">
-        <h2 className="text-2xl md:text-4xl font-bold mb-8 md:mb-12 text-center">Product Features</h2>
-        <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-8 max-w-5xl mx-auto">
-          <FeatureCard icon={Users} title="Collaboration" description="Work with your team seamlessly in real-time." />
-          <FeatureCard icon={Smile} title="User Friendly" description="Intuitive design for easy adoption and use." />
-          <FeatureCard icon={CreditCard} title="Secure Payments" description="Safe and fast payment processing integrated." />
-          <FeatureCard icon={BookOpen} title="Comprehensive Docs" description="Complete documentation and API guides." />
-          <FeatureCard icon={PhoneCall} title="24/7 Support" description="Our team is here to help anytime you need." />
-          <FeatureCard icon={User} title="Personalized" description="Tailored solutions to fit your unique needs." />
+      {/* --- STATS SECTION --- */}
+      <section className="py-10 bg-red-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-red-500/50">
+          {[
+            { label: "Restaurants", val: "500+" },
+            { label: "Food Items", val: "2,500+" },
+            { label: "Deliveries", val: "100k+" },
+            { label: "Happy Users", val: "99%" },
+          ].map((stat, idx) => (
+            <div key={idx} className="p-2">
+              <h3 className="text-3xl md:text-4xl font-bold mb-1">{stat.val}</h3>
+              <p className="text-red-100 text-sm uppercase tracking-wider">{stat.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Pricing
-      <section id="pricing" className="py-20 px-6 max-w-7xl mx-auto bg-gray-100 rounded-lg">
-        <h2 className="text-4xl font-bold mb-12 text-center">Pricing Plans</h2>
-        <div className="flex flex-col md:flex-row justify-center gap-8 max-w-5xl mx-auto">
-          <PricingCard
-            title="Basic"
-            price="Free"
-            features={["Up to 3 Projects", "Basic Support", "Community Access"]}
-          />
-          <PricingCard
-            title="Pro"
-            price="$29/mo"
-            features={["Unlimited Projects", "Priority Support", "Advanced Analytics"]}
-          />
-          <PricingCard
-            title="Enterprise"
-            price="Contact Us"
-            features={["Custom Solutions", "Dedicated Support", "Onboarding & Training"]}
-          />
+      {/* --- FEATURED PARTNERS --- */}
+      <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+          <div>
+            <h2 className="text-red-600 font-bold tracking-wide uppercase text-sm mb-2">Top Restaurants</h2>
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-900">Order From the Best</h3>
+          </div>
+          <Link href="/restaurants" className="group flex items-center gap-2 text-red-600 font-semibold mt-4 md:mt-0">
+            View All Restaurants <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform"/>
+          </Link>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+             {[1,2,3,4].map(n => <div key={n} className="h-64 bg-gray-200 rounded-2xl animate-pulse"></div>)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {hotels.map((hotel, index) => (
+              <div
+                key={hotel._id || index}
+                className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-red-900/10 transition-all duration-300 transform hover:-translate-y-2"
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={hotel.image || '/placeholder.svg'}
+                    alt={hotel.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 text-sm font-bold shadow-sm">
+                    <Star size={14} className="text-yellow-400 fill-current" /> 4.8
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-red-600 transition-colors">{hotel.name}</h3>
+                  <div className="flex items-center text-gray-500 text-sm mb-4">
+                    <MapPin size={14} className="mr-1" />
+                    {hotel.address || "Unknown Location"}
+                  </div>
+                  <div className="flex items-center justify-between border-t border-gray-50 pt-4">
+                    <span className="text-xs font-semibold bg-red-50 text-red-600 px-2 py-1 rounded">Fast Delivery</span>
+                    <button className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* --- HOW IT WORKS --- */}
+      <section className="py-20 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-orange-50 skew-x-12 opacity-50"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How <span className="text-red-600">FoodsLinkx</span> Works</h2>
+            <p className="text-gray-600 text-lg">Getting your favorite food delivered is easy as pie. Just follow these three simple steps.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Connecting Line (Desktop) */}
+            <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-red-200 via-orange-200 to-red-200 border-t-2 border-dashed border-red-300 z-0"></div>
+
+            <StepCard 
+              number="01" 
+              title="Select Location" 
+              desc="Enter your destination to see restaurants available in your area." 
+              icon={MapPin}
+            />
+            <StepCard 
+              number="02" 
+              title="Choose Menu" 
+              desc="Browse the extensive menu and choose what your taste buds desire." 
+              icon={BookOpen}
+            />
+            <StepCard 
+              number="03" 
+              title="Fast Delivery" 
+              desc="Our delivery partner knocks on your door with hot food in no time." 
+              icon={Utensils}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* --- FEATURES GRID --- */}
+      <section className="py-20 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard icon={Users} title="Live Tracking" description="Track your food in real-time from the restaurant to your doorstep." />
+            <FeatureCard icon={Smile} title="Super Taste" description="We partner only with the highest-rated chefs in your city." />
+            <FeatureCard icon={CreditCard} title="Easy Payments" description="Pay via UPI, Credit Card, or Cash on Delivery securely." />
+            <FeatureCard icon={Smartphone} title="Mobile App" description="Order on the go with our dedicated iOS and Android apps." />
+            <FeatureCard icon={PhoneCall} title="24/7 Support" description="Stuck with an order? Our support team is always awake." />
+            <FeatureCard icon={User} title="Personalized" description="Get recommendations based on your previous cravings." />
+          </div>
+        </div>
+      </section>
+
+      {/* --- APP DOWNLOAD CTA --- */}
+      {/* <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto bg-gradient-to-r from-red-600 to-orange-600 rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-2xl shadow-red-200">
+          
+          
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-400 opacity-20 rounded-full blur-2xl transform -translate-x-1/3 translate-y-1/3"></div>
+
+          <div className="z-10 text-white max-w-xl space-y-6 text-center md:text-left">
+            <h2 className="text-3xl md:text-5xl font-bold">Download the Mobile App</h2>
+            <p className="text-red-100 text-lg">Get 20% off your first order when you download the FoodsLinkx app. Available on iOS and Android.</p>
+            <div className="flex justify-center md:justify-start gap-4 pt-4">
+              <button className="flex items-center gap-3 bg-white text-gray-900 px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition shadow-lg">
+                <Smartphone size={24} /> App Store
+              </button>
+              <button className="flex items-center gap-3 bg-red-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-red-900 transition shadow-lg ring-1 ring-white/30">
+                <Smartphone size={24} /> Google Play
+              </button>
+            </div>
+          </div>
+          
+          <div className="relative z-10 mt-10 md:mt-0 w-full max-w-sm">
+             <img src="/Assets/app-mockup.png" onError={(e) => e.currentTarget.src='https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=400'} alt="App Preview" className="mx-auto rounded-3xl shadow-2xl rotate-3 border-4 border-white/20" />
+          </div>
         </div>
       </section> */}
 
-      {/* Contact us */}
-      {/* <section id="contact" className="py-20 px-6 max-w-7xl mx-auto bg-white rounded-lg">
-        <h2 className="text-4xl font-bold mb-8 text-center">Contact Us</h2>
-        <form className="max-w-xl mx-auto space-y-6" onSubmit={(e) => e.preventDefault()}>
-          <div className="flex flex-col">
-            <label htmlFor="name" className="mb-2 font-semibold">Name</label>
-            <input id="name" type="text" required className="border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      {/* --- FOOTER --- */}
+      <footer className="bg-gray-900 text-gray-300 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-white font-bold text-2xl">
+              <ChefHat className="text-red-500" /> FoodsLinkx
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Connecting food lovers with the best restaurants in town. Fresh, fast, and delicious.
+            </p>
           </div>
-          <div className="flex flex-col">
-            <label htmlFor="email" className="mb-2 font-semibold">Email</label>
-            <input id="email" type="email" required className="border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          
+          <div>
+            <h4 className="text-white font-bold mb-6">Company</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="#" className="hover:text-red-500 transition">About Us</a></li>
+              <li><a href="#" className="hover:text-red-500 transition">Team</a></li>
+              <li><a href="#" className="hover:text-red-500 transition">Careers</a></li>
+              <li><a href="#" className="hover:text-red-500 transition">Blog</a></li>
+            </ul>
           </div>
-          <div className="flex flex-col">
-            <label htmlFor="message" className="mb-2 font-semibold">Message</label>
-            <textarea id="message" rows={4} required className="border border-gray-300 px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-          </div>
-          <button type="submit" className="w-full py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 transition">
-            Send Message
-          </button>
-        </form>
-      </section> */}
 
-      {/* Footer */}
-      <footer className="py-6 md:py-8 text-center text-gray-600 border-t border-gray-300 mt-12 md:mt-16 select-none rounded-t-3xl mx-4">
-        &copy; 2025 MyCompany. All rights reserved.
+          <div>
+            <h4 className="text-white font-bold mb-6">Contact</h4>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center gap-2"><MapPin size={16}/> Baramati, Maharashtra</li>
+              <li className="flex items-center gap-2"><PhoneCall size={16}/> +91 98765 43210</li>
+              <li className="flex items-center gap-2"><CreditCard size={16}/> support@foodslinkx.com</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-bold mb-6">Newsletter</h4>
+            <p className="text-xs text-gray-500 mb-4">Subscribe to get special offers and coupons.</p>
+            <div className="flex">
+              <input type="email" placeholder="Email" className="bg-gray-800 border-none outline-none text-white px-4 py-2 rounded-l-lg w-full focus:ring-1 focus:ring-red-500" />
+              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-r-lg font-bold">GO</button>
+            </div>
+          </div>
+        </div>
+        <div className="text-center text-gray-600 text-sm mt-16 pt-8 border-t border-gray-800">
+          &copy; {new Date().getFullYear()} FoodsLinkx. All rights reserved.
+        </div>
       </footer>
     </main>
   );
 }
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ComponentType<{ size?: number }>;
-  title: string;
-  description: string;
-}) {
+// Helper Components
+
+function StepCard({ number, title, desc, icon: Icon }: any) {
   return (
-    <div className="glass rounded-lg p-4 flex flex-col items-center text-center space-y-3 hover:shadow-md transition">
-      <div className="text-blue-600">
+    <div className="relative bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 z-10 text-center group">
+      <div className="w-16 h-16 mx-auto bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
         <Icon size={32} />
       </div>
-      <h3 className="font-bold text-lg">{title}</h3>
-      <p className="text-gray-700 text-sm">{description}</p>
+      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs font-bold px-3 py-1 rounded-full border-4 border-white">
+        STEP {number}
+      </div>
+      <h3 className="text-xl font-bold mb-3">{title}</h3>
+      <p className="text-gray-500 leading-relaxed">{desc}</p>
+    </div>
+  )
+}
+
+function FeatureCard({ icon: Icon, title, description }: any) {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-red-100 transition-all duration-300 group">
+      <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-red-600 mb-4 group-hover:scale-110 transition-transform">
+        <Icon size={24} />
+      </div>
+      <h3 className="font-bold text-lg mb-2 group-hover:text-red-600 transition-colors">{title}</h3>
+      <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
     </div>
   );
 }
-

@@ -234,20 +234,7 @@ export default function InvoicePage() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={() => router.push(`/hotels/${hotelId}/pay?orderId=${orderId}`)}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-            >
-              Proceed to Payment
-            </button>
-            <button
-              onClick={() => router.push(`/hotels/${hotelId}`)}
-              className="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-secondary/80 transition-colors"
-            >
-              Order More
-            </button>
-          </div>
+          
         </div>
       </main>
     </div>

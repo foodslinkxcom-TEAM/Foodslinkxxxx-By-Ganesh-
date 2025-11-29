@@ -130,7 +130,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         status: "pending",
         placedAt: new Date().toISOString(),
       }
-
+      console.log(payload)
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

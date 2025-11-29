@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import HotelNavbar from "@/components/hotel/HotelNavbar"
 import { ArrowLeft, CheckCircle } from "lucide-react"
+import Link from "next/link"
 
 interface PaymentQRProps {
   orderId: string
@@ -163,17 +164,13 @@ export default function PaymentPage() {
           </div>
 
           {/* Confirm Payment Button */}
+          <Link href={`/hotels/${hotelId}/invoice/${orderId}`}>
           <button
-            onClick={handleConfirmPayment}
-            disabled={confirming}
             className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 mb-3"
           >
-            {confirming ? "Confirming..." : "Confirm Payment"}
+            Download Invoice
           </button>
-
-          <p className="text-xs text-muted-foreground text-center">
-            Click confirm only after you have completed the payment in your UPI app
-          </p>
+          </Link>
         </div>
       </main>
     </div>

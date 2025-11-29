@@ -41,8 +41,7 @@ export function DashboardLayout({ hotelId }: ResponsiveNavProps) {
     { icon: Receipt, label: "Invoices", path: `invoices` },
     { icon: MessageSquare, label: "Feedback", path: `feedback` },
     { icon: QrCode, label: "QR Code", path: `qr` },       // New QR route
-    { icon: Settings, label: "Settings", path: `settings` }, // New Settings route
-    { icon: LogOut, label: "Logout", path: `logout` },
+    { icon: Settings, label: "Settings", path: `settings` },
   ];
 
   const bottomNavItems = [
@@ -117,6 +116,13 @@ export function DashboardLayout({ hotelId }: ResponsiveNavProps) {
               </Link>
             )
           })}
+          <Link
+                href="/auth/logout"
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors`}
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Logout</span>
+              </Link>
         </nav>
       </aside>
 

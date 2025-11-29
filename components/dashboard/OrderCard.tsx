@@ -92,21 +92,21 @@ export default function OrderCard({ order, hotelId }: OrderCardProps) {
     }
   }
 
-  const handleLocationApproval = async (approved: boolean) => {
-    try {
-      const response = await fetch(`/api/hotels/${hotelId}/verify-location`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order._id, approved }),
-      })
+  // const handleLocationApproval = async (approved: boolean) => {
+  //   try {
+  //     const response = await fetch(`/api/hotels/${hotelId}/verify-location`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ orderId: order._id, approved }),
+  //     })
 
-      if (!response.ok) {
-        console.error("Error verifying location")
-      }
-    } catch (error) {
-      console.error("Error:", error)
-    }
-  }
+  //     if (!response.ok) {
+  //       console.error("Error verifying location")
+  //     }
+  //   } catch (error) {
+  //     console.error("Error:", error)
+  //   }
+  // }
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
@@ -122,21 +122,21 @@ export default function OrderCard({ order, hotelId }: OrderCardProps) {
         </div>
       </div>
 
-      {order.requiresReview && (
+      {/* {order.requiresReview && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
           <AlertCircle size={18} className="text-red-600" />
           <span className="text-sm text-red-700 font-medium">Location verification required</span>
         </div>
-      )}
+      )} */}
 
-      {order.location && (
+      {/* {order.location && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
           <MapPin size={16} className="text-blue-600" />
           <span className="text-sm text-blue-700 font-medium">
             {order.location.verified ? "Location verified" : "Location unverified"}
           </span>
         </div>
-      )}
+      )} */}
 
       {/* Items */}
       <div className="space-y-3 mb-6 pb-4 border-b border-gray-200">
@@ -161,7 +161,7 @@ export default function OrderCard({ order, hotelId }: OrderCardProps) {
         <span className="text-2xl font-bold text-green-600">₹{order.total}</span>
       </div>
 
-      {order.requiresReview && (
+      {/* {order.requiresReview && (
         <div className="flex gap-3 mb-4">
           <button
             onClick={() => handleLocationApproval(true)}
@@ -176,7 +176,7 @@ export default function OrderCard({ order, hotelId }: OrderCardProps) {
             Reject
           </button>
         </div>
-      )}
+      )} */}
 
       {/* Download Invoice Button */}
       <button
