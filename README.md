@@ -1,4 +1,4 @@
-# Hotel Order Management System
+# Hotel Order Management System by FoodsLinkX
 
 A full-stack real-time hotel order management system built with Next.js, MongoDB, and Server-Sent Events (SSE).
 
