@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { LayoutDashboard, Building, Users, ShieldCheck, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Building, Users, ShieldCheck, Menu, X, LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMediaQuery } from '@/hooks/use-mobile'
 
@@ -28,6 +28,7 @@ export function DashboardLayout() {
     { icon: Building, label: 'Hotels', path: '/admin/hotels' },
     { icon: Users, label: 'Users', path: '/admin/users' },
     { icon: ShieldCheck, label: 'Verification', path: '/admin/verification-requests' },
+    { icon: LogOut, label: 'Logout', path: '/auth/logout' },
   ]
 
   // Mobile Bottom Navigation

@@ -1,10 +1,18 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import HotelNavbar from "@/components/hotel/HotelNavbar"
-import { ArrowLeft, Download, Printer, Receipt } from "lucide-react"
+import { 
+  ArrowLeft, 
+  Download, 
+  Printer, 
+  Receipt, 
+  MapPin, 
+  ChefHat 
+} from "lucide-react"
 
+// ... (Keep Interfaces same as before)
 interface OrderItem {
   menuItemId: string
   name: string
@@ -39,7 +47,6 @@ export default function InvoicePage() {
   const [hotel, setHotel] = useState<Hotel | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const invoiceRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,171 +79,195 @@ export default function InvoicePage() {
     }
   }, [orderId, hotelId])
 
-  const downloadPDF = () => {
-    // Since PDF generation has compatibility issues, use print dialog which allows saving as PDF
-    window.print()
-  }
-
-  const printInvoice = () => {
+  const handlePrint = () => {
     window.print()
   }
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-foreground">Loading invoice...</p>
-          </div>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
+        <div className="w-12 h-12 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-500 font-medium">Generating Invoice...</p>
       </div>
     )
   }
 
   if (error || !order || !hotel) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex flex-col min-h-screen bg-slate-50">
         <HotelNavbar hotelName={hotel?.name || ""} onSearch={() => {}} />
-        <div className="flex items-center justify-center min-h-screen px-4">
-          <div className="text-center">
-            <p className="text-lg text-muted-foreground mb-4">{error || "Invoice not found"}</p>
-            <button
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <ArrowLeft size={20} />
-              Go Back
-            </button>
-          </div>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center">
+          <p className="text-lg font-bold text-slate-800 mb-2">{error || "Invoice not found"}</p>
+          <button onClick={() => router.back()} className="text-rose-600 underline">
+            Go Back
+          </button>
         </div>
       </div>
     )
   }
 
-  const tax = order.total * 0.05 // 5% tax
-  const finalTotal = order.total + tax
+  const subTotal = order.total
+  const taxRate = 0.05
+  const taxAmount = subTotal * taxRate
+  const grandTotal = subTotal + taxAmount
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <HotelNavbar hotelName={hotel.name} onSearch={() => {}} />
+    <>
+      {/* 1. FORCE PRINT COLORS 
+         This style tag forces the browser to respect background colors and text colors
+      */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            margin: 0;
+            size: auto;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            background-color: white !important;
+          }
+          /* Hide default browser headers/footers if possible */
+        }
+      `}</style>
 
-      <main className="flex-1 px-4 py-6">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+      <div className="min-h-screen bg-slate-100 print:bg-white pb-20 print:pb-0">
+        <div className="print:hidden">
+          <HotelNavbar hotelName={hotel.name} onSearch={() => {}} />
+        </div>
+
+        <main className="max-w-3xl mx-auto px-4 py-6 print:p-0 print:max-w-none print:w-full">
+          
+          {/* Toolbar (Hidden in Print) */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 print:hidden">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+              className="self-start flex items-center gap-2 text-slate-500 hover:text-rose-600 transition-colors font-medium"
             >
               <ArrowLeft size={20} />
               Back
             </button>
+            
             <div className="flex gap-3">
               <button
-                onClick={printInvoice}
-                className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-secondary/80 transition-colors"
-              >
-                <Printer size={18} />
-                Print
-              </button>
-              <button
-                onClick={downloadPDF}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                onClick={handlePrint}
+                className="flex items-center gap-2 bg-rose-600 text-white px-6 py-2.5 rounded-xl hover:bg-rose-700 transition-colors font-semibold shadow-md shadow-rose-200"
               >
                 <Download size={18} />
-                Print/Save PDF
+                Download / Print Bill
               </button>
             </div>
           </div>
 
-          {/* Invoice */}
-          <div ref={invoiceRef} className="bg-card border-2 border-border rounded-lg p-8 print:shadow-none print:border-none">
-            {/* Invoice Header */}
-            <div className="text-center mb-8">
-              <Receipt size={48} className="text-primary mx-auto mb-4" />
-              <h1 className="text-3xl font-bold text-foreground mb-2">Invoice</h1>
-              <p className="text-muted-foreground">Order #{order._id.slice(-8).toUpperCase()}</p>
+          {/* INVOICE CARD 
+              Removed 'print:shadow-none' and 'print:border-none' if you want the border to show,
+              but usually, full-page print looks better without the outer card border.
+              I kept colors active (removed print:grayscale).
+          */}
+          <div 
+            id="invoice-content"
+            className="bg-white p-8 md:p-12 rounded-xl shadow-xl shadow-slate-200 border border-slate-100 relative overflow-hidden print:shadow-none print:border-none print:rounded-none print:p-8 print:w-full"
+          >
+            {/* Paid Stamp */}
+            {order.status === 'paid' && (
+              <div className="absolute top-12 right-12 border-4 border-green-500 text-green-500 font-black text-4xl uppercase tracking-widest px-4 py-2 rotate-[-15deg] opacity-20 pointer-events-none">
+                PAID
+              </div>
+            )}
+
+            {/* Header */}
+            <div className="text-center border-b-2 border-dashed border-slate-200 pb-8 mb-8">
+              <div className="flex justify-center mb-4">
+                 <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                    <ChefHat size={32} />
+                 </div>
+              </div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">{hotel.name}</h1>
+              {hotel.address && (
+                <div className="flex items-center justify-center gap-1 text-slate-500 text-sm mb-1">
+                  <MapPin size={14} />
+                  <span>{hotel.address}</span>
+                </div>
+              )}
             </div>
 
-            {/* Hotel & Order Info */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
+            {/* Meta Data */}
+            <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm mb-8">
               <div>
-                <h3 className="font-semibold text-foreground mb-2">From</h3>
-                <p className="text-foreground font-medium">{hotel.name}</p>
-                {hotel.address && <p className="text-muted-foreground text-sm">{hotel.address}</p>}
+                <p className="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Billed To</p>
+                <p className="font-bold text-slate-800">Guest</p>
+                <p className="text-slate-600">Table No: {order.table}</p>
               </div>
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Order Details</h3>
-                <p className="text-muted-foreground text-sm">Table: {order.table}</p>
-                <p className="text-muted-foreground text-sm">Date: {new Date(order.createdAt).toLocaleDateString()}</p>
-                <p className="text-muted-foreground text-sm">Time: {new Date(order.createdAt).toLocaleTimeString()}</p>
+              <div className="text-right">
+                <p className="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Invoice Details</p>
+                <p className="font-bold text-slate-800">#{order._id.slice(-6).toUpperCase()}</p>
+                <p className="text-slate-600">{new Date(order.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
 
             {/* Items Table */}
             <div className="mb-8">
-              <h3 className="font-semibold text-foreground mb-4">Order Items</h3>
-              <div className="border border-border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-secondary">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-foreground font-semibold">Item</th>
-                      <th className="px-4 py-3 text-center text-foreground font-semibold">Qty</th>
-                      <th className="px-4 py-3 text-right text-foreground font-semibold">Price</th>
-                      <th className="px-4 py-3 text-right text-foreground font-semibold">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {order.items.map((item, index) => (
-                      <tr key={index} className="border-t border-border">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="text-foreground font-medium">{item.name}</p>
-                            {item.customization && (
-                              <p className="text-muted-foreground text-sm">Note: {item.customization}</p>
-                            )}
+              <table className="w-full text-sm">
+                <thead className="bg-rose-50 text-rose-900 font-bold">
+                  <tr>
+                    <th className="px-4 py-3 text-left rounded-l-lg">Item</th>
+                    <th className="px-4 py-3 text-center">Qty</th>
+                    <th className="px-4 py-3 text-right">Price</th>
+                    <th className="px-4 py-3 text-right rounded-r-lg">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {order.items.map((item, index) => (
+                    <tr key={index}>
+                      <td className="px-4 py-3 text-slate-800 font-medium">
+                        {item.name}
+                        {item.customization && (
+                          <div className="text-[10px] text-slate-400 font-normal">
+                            {item.customization}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 text-center text-foreground">{item.quantity}</td>
-                        <td className="px-4 py-3 text-right text-foreground">₹{item.price.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right text-foreground">₹{(item.price * item.quantity).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center text-slate-600">{item.quantity}</td>
+                      <td className="px-4 py-3 text-right text-slate-600">₹{item.price}</td>
+                      <td className="px-4 py-3 text-right text-slate-800 font-bold">
+                        ₹{item.price * item.quantity}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {/* Totals */}
-            <div className="border-t-2 border-border pt-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-foreground">
-                  <span>Subtotal:</span>
-                  <span>₹{order.total.toFixed(2)}</span>
+            {/* Calculation Summary */}
+            <div className="flex justify-end mb-12">
+              <div className="w-full md:w-1/2 space-y-3">
+                <div className="flex justify-between text-slate-600 text-sm">
+                  <span>Subtotal</span>
+                  <span className="font-medium">₹{subTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-foreground">
-                  <span>Tax (5%):</span>
-                  <span>₹{tax.toFixed(2)}</span>
+                <div className="flex justify-between text-slate-600 text-sm">
+                  <span>Tax (5%)</span>
+                  <span className="font-medium">₹{taxAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg text-primary border-t border-border pt-2">
-                  <span>Total:</span>
-                  <span>₹{finalTotal.toFixed(2)}</span>
+                
+                <div className="border-t-2 border-slate-800 my-2 pt-2 flex justify-between items-center">
+                  <span className="font-bold text-slate-900 text-lg">Grand Total</span>
+                  <span className="font-extrabold text-rose-600 text-2xl">
+                    ₹{grandTotal.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="text-center mt-8 pt-6 border-t border-border">
-              <p className="text-muted-foreground text-sm">Thank you for dining with us!</p>
-              <p className="text-muted-foreground text-xs mt-2">Generated on {new Date().toLocaleString()}</p>
+            <div className="text-center border-t border-slate-100 pt-8">
+              <h3 className="text-rose-600 font-bold text-lg mb-1">Thank You!</h3>
+              <p className="text-slate-500 text-sm mb-4">We hope you enjoyed your meal.</p>
             </div>
-          </div>
 
-          {/* Actions */}
-          
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
+      </div>
+    </>
   )
 }

@@ -2,7 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Utensils, DollarSign, Tag, FileText, Image as ImageIcon, ToggleLeft, ToggleRight } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Utensils, 
+  DollarSign, 
+  Tag, 
+  FileText, 
+  Image as ImageIcon, 
+  UploadCloud, 
+  Link as LinkIcon,
+  Check,
+  X
+} from "lucide-react";
 
 type Category = {
   _id: string;
@@ -14,20 +25,27 @@ export default function CreateMenuItemPage() {
   const params = useParams();
   const hotelId = params.id as string;
 
+  // Form State
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
+  
+  // Image State
+  const [imageType, setImageType] = useState<"file" | "url">("file");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
   const [linkTarget, setLinkTarget] = useState("");
   const [available, setAvailable] = useState(true);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingCats, setFetchingCats] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch Categories
   useEffect(() => {
     if (!hotelId) return;
 
@@ -36,17 +54,41 @@ export default function CreateMenuItemPage() {
         const res = await fetch(`/api/hotels/${hotelId}/categories`);
         if (!res.ok) throw new Error("Failed to fetch categories");
         const data = await res.json();
-        setCategories(data.categories || data);
-        if (data.categories?.length > 0 && !category) {
-          setCategory(data.categories[0]._id);
+        const cats = data.categories || data;
+        setCategories(cats);
+        // Auto-select first category if available
+        if (cats.length > 0 && !category) {
+          setCategory(cats[0]._id);
         }
       } catch (err: any) {
-        setError(err.message);
+        setError("Could not load categories. Please try refreshing.");
+      } finally {
+        setFetchingCats(false);
       }
     };
 
     fetchCategories();
-  }, [hotelId, category]);
+  }, [hotelId]);
+
+  // Handle Image File Selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) setImagePreview(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle URL Paste
+  const handleUrlChange = (val: string) => {
+    setImageUrl(val);
+    setImagePreview(val); // Preview URL immediately
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,12 +103,13 @@ export default function CreateMenuItemPage() {
       formData.append('price', price);
       formData.append('category', category);
       formData.append('available', available.toString());
-      if (imageFile) {
+      
+      if (imageType === 'file' && imageFile) {
         formData.append('imageFile', imageFile);
-      }
-      if (imageUrl) {
+      } else if (imageType === 'url' && imageUrl) {
         formData.append('imageUrl', imageUrl);
       }
+      
       if (linkTarget) {
         formData.append('linkTarget', linkTarget);
       }
@@ -84,157 +127,253 @@ export default function CreateMenuItemPage() {
       router.push(`/dashboard/hotels/${hotelId}/menu`);
     } catch (err: any) {
       setError(err.message);
+      window.scrollTo(0, 0);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
-    const items = event.clipboardData.items;
-    for (const item of items) {
-      if (item.type.includes("image")) {
-        const file = item.getAsFile();
-        if (file) {
-          setImageFile(file);
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (e.target && typeof e.target.result === "string") {
-              setImagePreview(e.target.result);
-            }
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target && typeof e.target.result === "string") {
-          setImagePreview(e.target.result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    <div className="max-w-4xl mx-auto p-8">
-        <div className="flex items-center mb-8">
-            <button onClick={() => router.back()} className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
-                <ArrowLeft size={20} />
-                <span className="font-semibold">Back to Menu</span>
+    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 pb-24">
+      <div className="max-w-3xl mx-auto">
+        
+        {/* Header */}
+        <div className="mb-8">
+            <button 
+              onClick={() => router.back()} 
+              className="flex items-center gap-2 text-slate-500 hover:text-rose-600 transition-colors mb-4 font-medium"
+            >
+                <ArrowLeft size={18} />
+                <span>Cancel</span>
             </button>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Add New Dish</h1>
+            <p className="text-slate-500 mt-1">Fill in the details to create a new menu item.</p>
         </div>
 
-        <div className="bg-card p-8 rounded-xl shadow-lg">
-            <h1 className="text-3xl font-bold text-primary mb-8">Create a New Menu Item</h1>
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Name */}
-                    <div className="space-y-2">
-                        <label className="font-semibold flex items-center gap-2"><Utensils size={16}/> Dish Name</label>
-                        <input type="text" placeholder="e.g., Margherita Pizza" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary" required />
-                    </div>
+        {/* Form Card */}
+        <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+                
+                {/* --- Section 1: Basic Details --- */}
+                <div className="space-y-6">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                        Basic Information
+                    </h3>
 
-                    {/* Price */}
-                    <div className="space-y-2">
-                        <label className="font-semibold flex items-center gap-2"><DollarSign size={16}/> Price</label>
-                        <input type="number" placeholder="e.g., 12.99" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary" required />
-                    </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-2">
-                    <label className="font-semibold flex items-center gap-2"><FileText size={16}/> Description</label>
-                    <textarea placeholder="e.g., Classic pizza with fresh mozzarella and basil" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary min-h-[100px]" required />
-                </div>
-
-                {/* Category */}
-                <div className="space-y-2">
-                    <label className="font-semibold flex items-center gap-2"><Tag size={16}/> Category</label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary" required>
-                        <option value="" disabled>Select a category</option>
-                        {categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
-                    </select>
-                </div>
-
-                {/* Image Upload */}
-                <div className="space-y-4">
-                    <label className="font-semibold flex items-center gap-2"><ImageIcon size={16}/> Image</label>
-
-                    {/* File Upload */}
-                    <div className="space-y-2">
-                        <label className="block text-sm text-muted-foreground">Upload Image File (max 5MB)</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
-                        />
-                    </div>
-
-                    {/* OR separator */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1 h-px bg-border"></div>
-                        <span className="text-sm text-muted-foreground font-medium">OR</span>
-                        <div className="flex-1 h-px bg-border"></div>
-                    </div>
-
-                    {/* External URL */}
-                    <div className="space-y-2">
-                        <label className="block text-sm text-muted-foreground">External Image URL</label>
-                        <input
-                            type="url"
-                            placeholder="https://example.com/image.jpg"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            onPaste={handlePaste}
-                            className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
-                        />
-                    </div>
-
-                    {/* Link Target */}
-                    <div className="space-y-2">
-                        <label className="block text-sm text-muted-foreground">Link Target URL (optional)</label>
-                        <input
-                            type="url"
-                            placeholder="https://example.com"
-                            value={linkTarget}
-                            onChange={(e) => setLinkTarget(e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg border-2 border-border bg-background text-foreground focus:outline-none focus:border-primary"
-                        />
-                    </div>
-
-                    {/* Preview */}
-                    {imagePreview && (
-                        <div className="mt-4">
-                            <p className="text-sm font-medium text-muted-foreground mb-2">Image Preview:</p>
-                            <img src={imagePreview} alt="Menu item preview" className="rounded-lg border-2 border-border max-h-48 w-auto" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Name */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <Utensils size={16} className="text-rose-500"/> Item Name
+                            </label>
+                            <input 
+                                type="text" 
+                                placeholder="e.g. Butter Chicken" 
+                                value={name} 
+                                onChange={(e) => setName(e.target.value)} 
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all" 
+                                required 
+                            />
                         </div>
-                    )}
-                </div>
 
-                {/* Availability */}
-                <div className="flex items-center justify-between py-2">
-                    <label className="font-semibold">Available for Ordering</label>
-                    <div onClick={() => setAvailable(!available)} className="cursor-pointer flex items-center gap-2">
-                        {available ? <ToggleRight size={40} className="text-primary"/> : <ToggleLeft size={40} className="text-muted-foreground"/>}
-                        <span className={`font-bold ${available ? 'text-primary' : 'text-muted-foreground'}`}>{available ? "Yes" : "No"}</span>
+                        {/* Price */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <DollarSign size={16} className="text-rose-500"/> Price (₹)
+                            </label>
+                            <input 
+                                type="number" 
+                                placeholder="0.00" 
+                                value={price} 
+                                onChange={(e) => setPrice(e.target.value)} 
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all" 
+                                required 
+                            />
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <FileText size={16} className="text-rose-500"/> Description
+                        </label>
+                        <textarea 
+                            placeholder="Describe the dish ingredients and taste..." 
+                            value={description} 
+                            onChange={(e) => setDescription(e.target.value)} 
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all min-h-[100px] resize-y" 
+                            required 
+                        />
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <Tag size={16} className="text-rose-500"/> Category
+                        </label>
+                        <div className="relative">
+                            <select 
+                                value={category} 
+                                onChange={(e) => setCategory(e.target.value)} 
+                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all appearance-none" 
+                                required
+                                disabled={fetchingCats}
+                            >
+                                <option value="" disabled>Select a category</option>
+                                {categories.map((cat) => <option key={cat._id} value={cat._id}>{cat.name}</option>)}
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {error && <p className="text-red-500 text-sm font-semibold pt-2">{error}</p>}
+                {/* --- Section 2: Media --- */}
+                <div className="space-y-6">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2">
+                        Item Image
+                    </h3>
 
-                <button type="submit" disabled={loading} className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
-                    {loading ? "Creating..." : "Create Menu Item"}
+                    {/* Tabs for Image Source */}
+                    <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+                        <button
+                            type="button"
+                            onClick={() => setImageType("file")}
+                            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${imageType === "file" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        >
+                            Upload File
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setImageType("url")}
+                            className={`px-4 py-2 text-sm font-semibold rounded-md transition-all ${imageType === "url" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                        >
+                            Paste URL
+                        </button>
+                    </div>
+
+                    {/* Image Input Area */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                        <div className="md:col-span-2 space-y-4">
+                            {imageType === 'file' ? (
+                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors relative cursor-pointer group">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <UploadCloud size={32} className="mx-auto text-slate-400 mb-2 group-hover:text-rose-500 transition-colors" />
+                                    <p className="text-sm font-medium text-slate-600">
+                                        {imageFile ? imageFile.name : "Click or Drag to Upload"}
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1">SVG, PNG, JPG (Max 5MB)</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label className="text-sm text-slate-600">External Image URL</label>
+                                    <div className="relative">
+                                        <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
+                                        <input
+                                            type="url"
+                                            placeholder="https://..."
+                                            value={imageUrl}
+                                            onChange={(e) => handleUrlChange(e.target.value)}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-rose-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                             {/* Optional Link Target */}
+                             <div className="space-y-2 pt-2">
+                                <label className="text-sm text-slate-500 flex items-center gap-1">
+                                    Target URL <span className="text-[10px] bg-slate-100 px-1.5 rounded text-slate-400">Optional</span>
+                                </label>
+                                <input
+                                    type="url"
+                                    placeholder="https://..."
+                                    value={linkTarget}
+                                    onChange={(e) => setLinkTarget(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-rose-500"
+                                />
+                             </div>
+                        </div>
+
+                        {/* Preview Box */}
+                        <div className="bg-slate-100 rounded-xl border border-slate-200 h-48 flex items-center justify-center overflow-hidden relative">
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="text-center text-slate-400 p-4">
+                                    <ImageIcon size={24} className="mx-auto mb-2 opacity-50" />
+                                    <span className="text-xs">No image selected</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- Section 3: Settings --- */}
+                <div className="pt-2">
+                     <div 
+                        onClick={() => setAvailable(!available)}
+                        className={`
+                          flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all
+                          ${available 
+                             ? "border-green-500 bg-green-50/50" 
+                             : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                          }
+                        `}
+                     >
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${available ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-400'}`}>
+                                {available ? <Check size={20} /> : <X size={20} />}
+                            </div>
+                            <div>
+                                <p className={`font-bold ${available ? 'text-green-800' : 'text-slate-700'}`}>
+                                    {available ? "Available for Ordering" : "Currently Unavailable"}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                    {available ? "Customers can see and order this item." : "This item will be hidden from the menu."}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {/* Custom Toggle Switch */}
+                        <div className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 ${available ? 'bg-green-500' : 'bg-slate-300'}`}>
+                             <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${available ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </div>
+                     </div>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="p-4 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100 flex items-center gap-2">
+                        <X size={16} /> {error}
+                    </div>
+                )}
+
+                {/* Submit Button */}
+                <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="w-full py-4 bg-rose-600 text-white text-lg font-bold rounded-xl hover:bg-rose-700 hover:shadow-lg hover:shadow-rose-500/30 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                    {loading ? (
+                        <>
+                           <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                           Creating...
+                        </>
+                    ) : (
+                        "Create Menu Item"
+                    )}
                 </button>
+
             </form>
         </div>
     </div>
+  </div>
   );
 }

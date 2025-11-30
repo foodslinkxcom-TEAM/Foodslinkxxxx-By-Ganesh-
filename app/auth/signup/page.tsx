@@ -111,15 +111,34 @@ export default function RestaurantSignupForm() {
     e.preventDefault()
     setLoading(true)
     setError("")
-    
-    // Simulate API call for demo
-    // Replace with: await fetch("/api/auth/signup", ...)
-    setTimeout(() => {
-        console.log("Form Submitted", form)
+
+    try {
+        const response = await fetch("/api/auth/signup", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(form),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            // Throw error if status is not 200-299
+            throw new Error(data.message || "Registration failed")
+        }
+
+        console.log("Success:", data)
+        alert("Registration Successful!")
+        router.push("/dashboard/pending-verification")
         // router.push("/dashboard/pending-verification")
+
+    } catch (err: any) {
+        console.error("Error:", err)
+        setError(err.message || "Something went wrong. Please try again.")
+    } finally {
         setLoading(false)
-        alert("Registration Successful! (Demo)")
-    }, 1500)
+    }
   }
 
   return (

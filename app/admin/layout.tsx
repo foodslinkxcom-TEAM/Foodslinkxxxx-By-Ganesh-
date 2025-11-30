@@ -16,7 +16,7 @@ const Layout = ({ children}: LayoutProps) => {
     <div className="min-h-screen md:flex">
     {/* Sidebar */}
     <aside className="w-64 bg-white border-r border-gray-200">
-      <DashboardLayout hotelId={hotelId} />
+      <DashboardLayout />
     </aside>
   
     {/* Main Area */}

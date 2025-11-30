@@ -1,13 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
-import HotelNavbar from "@/components/hotel/HotelNavbar"
-import BottomNav from "@/components/hotel/BottomNav"
-import MainLayout from "@/components/layout/MainLayout"
-import { getDeviceId } from "@/lib/utils/device-id"
 import Link from "next/link"
-import { Clock, CheckCircle, Utensils } from "lucide-react"
+import MainLayout from "@/components/layout/MainLayout"
+import HotelNavbar from "@/components/hotel/HotelNavbar"
+import { getDeviceId } from "@/lib/utils/device-id"
+import { 
+  Clock, 
+  ChefHat, 
+  CheckCircle2, 
+  Receipt, 
+  RefreshCw, 
+  UtensilsCrossed, 
+  FileText, 
+  CreditCard 
+} from "lucide-react"
 
 interface OrderItem {
   _id?: string
@@ -24,7 +32,6 @@ interface Order {
   total: number
   status: "pending" | "cooking" | "served" | "paid"
   createdAt: string
-  updatedAt: string
 }
 
 export default function OrdersPage() {
@@ -33,137 +40,219 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [hotelName, setHotelName] = useState("")
+  const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const deviceId = getDeviceId()
-        const response = await fetch(`/api/orders?hotelId=${hotelId}&deviceId=${deviceId}`)
+  // --- Data Fetching ---
+  const fetchData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setRefreshing(true)
+    try {
+      const deviceId = getDeviceId()
+      
+      // Parallel Fetching
+      const [ordersRes, hotelRes] = await Promise.all([
+        fetch(`/api/orders?hotelId=${hotelId}&deviceId=${deviceId}`),
+        fetch(`/api/hotels/${hotelId}`)
+      ])
 
-        if (response.ok) {
-          const data = await response.json()
-          setOrders(Array.isArray(data) ? data : [data])
-        }
-
-        const hotelResponse = await fetch(`/api/hotels/${hotelId}`)
-        if (hotelResponse.ok) {
-          const hotelData = await hotelResponse.json()
-          setHotelName(hotelData.name)
-        }
-      } catch (error) {
-        console.error("Error fetching orders:", error)
-      } finally {
-        setLoading(false)
+      if (ordersRes.ok) {
+        const data = await ordersRes.json()
+        // Ensure array even if single object returned
+        const ordersArray = Array.isArray(data) ? data : (data ? [data] : [])
+        // Sort by newest first
+        setOrders(ordersArray.sort((a: Order, b: Order) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ))
       }
+
+      if (hotelRes.ok) {
+        const data = await hotelRes.json()
+        setHotelName(data.name)
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
     }
-
-    fetchOrders()
-
-    // Poll for updates every 3 seconds
-    const interval = setInterval(fetchOrders, 3000)
-    return () => clearInterval(interval)
   }, [hotelId])
 
-  const getStatusIcon = (status: string) => {
+  // --- Initial Load & Polling (20 Seconds) ---
+  useEffect(() => {
+    fetchData()
+
+    const intervalId = setInterval(() => {
+      fetchData(true) // Silent background refresh
+    }, 20000) // 20 Seconds
+
+    return () => clearInterval(intervalId)
+  }, [fetchData])
+
+  // --- Helper: Status Visuals ---
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Clock size={20} className="text-yellow-500" />
+        return (
+          <span className="flex items-center gap-1.5 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-xs font-bold border border-amber-100">
+            <Clock size={14} /> Order Received
+          </span>
+        )
       case "cooking":
-        return <Utensils size={20} className="text-blue-500" />
+        return (
+          <span className="flex items-center gap-1.5 bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-xs font-bold border border-rose-100 animate-pulse">
+            <ChefHat size={14} /> Preparing
+          </span>
+        )
       case "served":
-        return <CheckCircle size={20} className="text-green-500" />
+        return (
+          <span className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
+            <UtensilsCrossed size={14} /> Served
+          </span>
+        )
       case "paid":
-        return <CheckCircle size={20} className="text-green-600" />
+        return (
+          <span className="flex items-center gap-1.5 bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold border border-slate-200">
+            <CheckCircle2 size={14} /> Completed
+          </span>
+        )
       default:
         return null
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    return status?.charAt(0).toUpperCase() + status?.slice(1)
-  }
-
+  // --- Render: Loading Skeleton ---
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground">Loading orders...</p>
+      <MainLayout hotelId={hotelId}>
+        <div className="p-6 space-y-4 max-w-3xl mx-auto">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
+          ))}
         </div>
-      </div>
+      </MainLayout>
     )
   }
 
   return (
     <MainLayout hotelId={hotelId}>
-      <HotelNavbar hotelName={hotelName} onSearch={function (query: string): void {
-        console.log("not working")
-      } } />
-      <div className="flex flex-col min-h-screen bg-background pb-20">
-        <main className="flex-1 px-4 py-4">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Your Orders</h2>
-          {(orders.length === 0) || orders[0] == null ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <p className="text-muted-foreground">No orders yet</p>
-              <Link
-                href="/"
-                className="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark text-center"
-              >
-                Home
-              </Link>
+      <HotelNavbar hotelName={hotelName} onSearch={() => {}} />
+
+      <div className="max-w-3xl mx-auto px-4 py-6 pb-32">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-slate-800">Your Orders</h2>
+          <button 
+            onClick={() => fetchData()} 
+            disabled={refreshing}
+            className="p-2 text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+          >
+            <RefreshCw size={20} className={refreshing ? "animate-spin" : ""} />
+          </button>
+        </div>
+
+        {/* Content */}
+        {orders.length === 0 ? (
+          // Empty State
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="bg-rose-50 p-6 rounded-full mb-4">
+              <Receipt size={48} className="text-rose-300" />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <div key={order?._id} className="bg-card border-2 border-border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Order ID: {order?._id.slice(-6)}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(order?.createdAt).toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(order?.status)}
-                      <span className="font-semibold text-foreground">{getStatusLabel(order?.status)}</span>
-                    </div>
+            <h3 className="text-lg font-bold text-slate-700">No orders yet</h3>
+            <p className="text-slate-400 text-sm mb-6 max-w-xs">
+              Go ahead and explore our menu to place your first order.
+            </p>
+            <Link
+              href={`/hotels/${hotelId}`}
+              className="bg-rose-600 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-rose-500/30 hover:bg-rose-700 transition-all"
+            >
+              Order Food
+            </Link>
+          </div>
+        ) : (
+          // Orders List
+          <div className="space-y-6">
+            {orders.map((order) => (
+              <div 
+                key={order._id} 
+                className="bg-white rounded-2xl border border-rose-100/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
+              >
+                {/* Card Header */}
+                <div className="bg-slate-50/50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Order ID</span>
+                    <p className="text-xs font-mono text-slate-600">#{order._id.slice(-6).toUpperCase()}</p>
                   </div>
-
-                  <div className="space-y-2 mb-3 pb-3 border-b-2 border-border">
-                    {order?.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm">
-                        <span className="text-foreground">
-                          {item.quantity}x {item.name}
-                        </span>
-                        <span className="text-foreground">₹{item.price * item.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-between font-bold text-foreground mb-3">
-                    <span>Total:</span>
-                    <span className="text-primary">₹{order?.total}</span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Link
-                      href={`./pay?orderId=${order?._id}`}
-                      className="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark text-center"
-                    >
-                      Pay Bill
-                    </Link>
-                    <Link
-                      href={`./invoice/${order?._id}`}
-                      className="inline-block px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 text-center"
-                    >
-                      Download Invoice
-                    </Link>
+                  <div className="flex flex-col items-end gap-1">
+                    {getStatusBadge(order.status)}
+                    <span className="text-[10px] text-slate-400">
+                      {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </main>
 
-        <BottomNav hotelId={hotelId} />
+                {/* Card Body: Items */}
+                <div className="px-5 py-4">
+                  <ul className="space-y-3">
+                    {order.items.map((item, idx) => (
+                      <li key={idx} className="flex justify-between items-start text-sm">
+                        <div className="flex gap-3">
+                          <span className="bg-rose-100 text-rose-700 font-bold w-6 h-6 flex items-center justify-center rounded text-xs mt-0.5">
+                            {item.quantity}x
+                          </span>
+                          <div>
+                            <p className="font-semibold text-slate-800">{item.name}</p>
+                            {item.customization && (
+                              <p className="text-[10px] text-slate-400 italic mt-0.5">
+                                "{item.customization}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <span className="font-medium text-slate-600">
+                          ₹{item.price * item.quantity}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Divider */}
+                  <div className="my-4 border-t border-dashed border-slate-200" />
+
+                  {/* Total */}
+                  <div className="flex justify-between items-center mb-6">
+                    <span className="font-bold text-slate-700">Total Amount</span>
+                    <span className="text-xl font-extrabold text-rose-600">₹{order.total}</span>
+                  </div>
+
+                  {/* Actions Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Link
+                      href={`/hotels/${hotelId}/invoice/${order._id}`}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
+                    >
+                      <FileText size={16} />
+                      Invoice
+                    </Link>
+                    
+                    {order.status !== 'paid' ? (
+                      <Link
+                        href={`/hotels/${hotelId}/pay?orderId=${order._id}`}
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-semibold text-sm hover:bg-rose-700 shadow-md shadow-rose-200 transition-all"
+                      >
+                        <CreditCard size={16} />
+                        Pay Bill
+                      </Link>
+                    ) : (
+                       <button disabled className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-400 rounded-xl font-semibold text-sm cursor-not-allowed">
+                         <CheckCircle2 size={16} /> Paid
+                       </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </MainLayout>
   )
