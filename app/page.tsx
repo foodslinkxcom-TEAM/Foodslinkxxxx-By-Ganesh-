@@ -132,7 +132,7 @@ export default function LandingPage() {
             <Link href="/auth/login" className="text-gray-900 font-semibold hover:text-red-600 transition-colors">
               Log in
             </Link>
-            <Link href="/auth/register" className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold shadow-lg shadow-red-200 transition-all hover:shadow-red-300 hover:-translate-y-0.5 active:translate-y-0">
+            <Link href="/auth/signup" className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full font-semibold shadow-lg shadow-red-200 transition-all hover:shadow-red-300 hover:-translate-y-0.5 active:translate-y-0">
               Get Started
             </Link>
           </div>

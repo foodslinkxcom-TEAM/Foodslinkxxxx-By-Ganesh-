@@ -19,8 +19,8 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-rose-100 selection:text-rose-900 relative overflow-x-hidden">
       
       {/* --- Ambient Background Glows (Optional Visual Flair) --- */}
-      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-rose-100/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 -z-10 pointer-events-none" />
-      <div className="fixed bottom-0 left-0 w-[300px] h-[300px] bg-blue-50/50 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 -z-10 pointer-events-none" />
+      {/* <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-rose-100/40 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 -z-10 pointer-events-none" />
+      <div className="fixed bottom-0 left-0 w-[300px] h-[300px] bg-blue-50/50 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 -z-10 pointer-events-none" /> */}
 
       {/* --- Navigation Layer --- */}
       {/* This component (from your import) likely handles:
@@ -28,9 +28,9 @@ const Layout = ({ children }: LayoutProps) => {
          2. The Bottom Floating Dock (on Mobile)
          We render it here so it's always present.
       */}
-        <div className="sticky top-0 z-30 w-full">
+        
            <TopNavbar hotelName="FoodsLinkX" hotelId={hotelId} />
-        </div>
+        
 
         {/* Page Content */}
         {/* <main className="flex-1 p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500"> */}

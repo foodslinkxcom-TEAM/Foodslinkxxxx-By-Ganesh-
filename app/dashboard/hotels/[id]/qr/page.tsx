@@ -179,7 +179,7 @@ export default function QRPage() {
         </div>
 
         {/* --- QR Grid (This part prints) --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-in slide-in-from-bottom-8 duration-700 print:grid-cols-3 print:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-bottom-8 duration-700 print:grid-cols-3 print:gap-8">
           {Array.from({ length: maxTables }, (_, i) => i + 1).map((tableNumber) => (
             <div
               key={tableNumber}
