@@ -2,18 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { 
-  X, 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  CreditCard, 
-  Banknote, 
-  ChefHat, 
-  Loader2,
-  Table,
-  CheckCircle,
-  Clock
+  X, Search, Plus, Minus, Trash2, CreditCard, 
+  Banknote, ChefHat, Loader2, Table, CheckCircle, Clock 
 } from "lucide-react";
 
 // --- Types ---
@@ -24,7 +14,7 @@ interface MenuItem {
   category?: any;
   available?: boolean;
   image?: string;
-  imageFileUrl?: string; // Handle various image fields
+  imageFileUrl?: string; 
   imageUrl?: string;
 }
 
@@ -59,9 +49,18 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
         setLoading(true);
         const res = await fetch(`/api/hotels/${hotelId}/menu`);
         if (!res.ok) throw new Error("Failed to fetch menu items");
+        
         const data = await res.json();
-        setMenuItems(data.menu || []);
+        
+        // ROBUST DATA CHECK: Handle if data is array, or inside .menu / .items
+        let items: MenuItem[] = [];
+        if (Array.isArray(data)) items = data;
+        else if (data.menu && Array.isArray(data.menu)) items = data.menu;
+        else if (data.items && Array.isArray(data.items)) items = data.items;
+        
+        setMenuItems(items);
       } catch (err) {
+        console.error(err);
         setError("Error loading menu");
       } finally {
         setLoading(false);
@@ -92,7 +91,6 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
         delete newCart[itemId];
         return newCart;
       }
-      
       return {
         ...prev,
         [itemId]: { ...current, qty: newQty }
@@ -103,26 +101,26 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
   // --- Calculations ---
   const cartList = Object.values(cart);
   const subTotal = cartList.reduce((acc, item) => acc + (item.price * item.qty), 0);
-  const tax = subTotal * 0.05; // 5% Tax example
+  const tax = subTotal * 0.05; 
   const total = subTotal + tax;
 
   // --- Filter Menu ---
   const filteredMenu = useMemo(() => {
     return menuItems.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) && item.available
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
+      (item.available !== false) // Handle undefined as true
     );
   }, [menuItems, searchQuery]);
 
   // --- Submit ---
   const handleCreateInvoice = async () => {
-    if (!tableNo.trim()) {
-      alert("Please enter a Table Number");
-      return;
-    }
     if (cartList.length === 0) {
       alert("Please select at least one item");
       return;
     }
+
+    // AUTOMATIC "Counter" if table number is empty
+    const finalTableNo = tableNo.trim() === "" ? "Counter" : tableNo;
 
     setSubmitting(true);
     try {
@@ -134,14 +132,11 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
       }));
 
       const payload = {
-        table: tableNo,
+        table: finalTableNo,
         items: itemsPayload,
-        total: total, // Backend should ideally recalculate this, but sending for now
-        status: paymentStatus, // paid or pending
-        paymentMethod: paymentMethod, // cash or online
-        // If pending payment, status might be 'served' or 'pending'. 
-        // If paid, status is 'paid'.
-        // Adjusting status logic based on payment:
+        total: total,
+        status: paymentStatus, 
+        paymentMethod: paymentMethod, 
         orderStatus: paymentStatus === 'paid' ? 'paid' : 'served' 
       };
 
@@ -162,18 +157,19 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/80 backdrop-blur-sm">
+    // Fixed container: Adds pb-20/pb-24 on mobile to avoid bottom nav overlay
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/80 backdrop-blur-sm pb-20 sm:pb-4 px-2 sm:px-4">
       
-      {/* Main Card */}
-      <div className="bg-white w-full max-w-6xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in zoom-in-95">
+      {/* Main Card: Calculated height to fit mobile screen without overflowing */}
+      <div className="bg-white w-full max-w-6xl h-[calc(100vh-6rem)] sm:h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row animate-in slide-in-from-bottom-5 fade-in zoom-in-95">
         
         {/* ================= LEFT SIDE: MENU SELECTOR ================= */}
-        <div className="flex-1 flex flex-col bg-slate-50 border-r border-slate-200 overflow-hidden">
+        <div className="flex-1 flex flex-col bg-slate-50 border-r border-slate-200 overflow-hidden order-1">
           
           {/* Header & Search */}
-          <div className="p-6 border-b border-slate-200 bg-white">
+          <div className="p-4 sm:p-6 border-b border-slate-200 bg-white flex-none">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2">
                 <ChefHat className="text-rose-600" /> New Order
               </h2>
               <button onClick={onClose} className="lg:hidden p-2 bg-slate-100 rounded-full">
@@ -193,11 +189,13 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
           </div>
 
           {/* Menu Grid */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {loading ? (
               <div className="flex justify-center py-20"><Loader2 className="animate-spin text-rose-500" size={32}/></div>
+            ) : filteredMenu.length === 0 ? (
+               <div className="text-center text-slate-400 py-10">No items found</div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {filteredMenu.map((item) => {
                   const itemInCart = cart[item._id];
                   const img = item.imageFileUrl || item.imageUrl || item.image;
@@ -207,33 +205,34 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
                       key={item._id} 
                       onClick={() => addToCart(item)}
                       className={`
-                        relative group p-3 rounded-2xl border cursor-pointer transition-all duration-200
+                        relative group p-2 sm:p-3 rounded-2xl border cursor-pointer transition-all duration-200
                         ${itemInCart 
                           ? "bg-rose-50 border-rose-500 ring-1 ring-rose-500 shadow-md" 
-                          : "bg-white border-slate-200 hover:border-rose-300 hover:shadow-lg hover:-translate-y-1"
+                          : "bg-white border-slate-200 hover:border-rose-300 hover:shadow-lg"
                         }
                       `}
                     >
                       {/* Qty Badge */}
                       {itemInCart && (
-                        <div className="absolute -top-2 -right-2 bg-rose-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-md z-10">
+                        <div className="absolute -top-2 -right-2 bg-rose-600 text-white w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-md z-10">
                           {itemInCart.qty}
                         </div>
                       )}
 
-                      <div className="flex gap-3 items-center">
-                        <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center">
+                        <div className="w-full sm:w-16 h-20 sm:h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                           {img ? (
                             <img src={img} alt={item.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-300"><ChefHat size={20}/></div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 w-full">
                           <h4 className="font-bold text-slate-800 text-sm truncate">{item.name}</h4>
                           <p className="text-rose-600 font-bold mt-1">₹{item.price}</p>
                         </div>
-                        <button className="p-2 bg-white rounded-full shadow-sm text-slate-400 group-hover:text-rose-600">
+                        {/* Mobile Add Button hidden to save space, relies on card click */}
+                        <button className="hidden sm:block p-2 bg-white rounded-full shadow-sm text-slate-400 group-hover:text-rose-600 ml-auto">
                           <Plus size={16} />
                         </button>
                       </div>
@@ -246,107 +245,65 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
         </div>
 
         {/* ================= RIGHT SIDE: BILL & SETTINGS ================= */}
-        <div className="w-full lg:w-[400px] bg-white flex flex-col h-full shadow-2xl relative z-10">
+        {/* On mobile: this sits at the bottom or is scrollable. 
+            Using order-2 to keep it below menu on mobile logic if needed, 
+            but here Flex-col places it naturally below. */}
+        <div className="w-full lg:w-[400px] bg-white flex flex-col h-[40%] lg:h-full border-t lg:border-t-0 lg:border-l border-slate-200 shadow-2xl z-10 order-2">
           
-          <div className="p-6 flex-none">
-             <div className="flex justify-between items-center mb-6">
+          <div className="p-4 sm:p-6 flex-none">
+             <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg text-slate-800">Order Details</h3>
                 <button onClick={onClose} className="hidden lg:block p-2 text-slate-400 hover:text-rose-600 transition-colors">
                   <X size={24} />
                 </button>
              </div>
 
-             {/* Order Settings */}
-             <div className="space-y-4 mb-6">
+             {/* Order Settings - Compact on Mobile */}
+             <div className="flex flex-col gap-3">
                {/* Table Input */}
-               <div>
-                 <label className="text-xs font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-1">
-                    <Table size={12} /> Table Number
-                 </label>
-                 <input 
-                   type="text" 
-                   value={tableNo}
-                   onChange={(e) => setTableNo(e.target.value)}
-                   placeholder="e.g. 12 or T-5"
-                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-rose-500 font-semibold text-slate-800"
-                 />
-               </div>
-
-               {/* Payment & Status */}
-               <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1.5">Payment</label>
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                       <button 
-                         onClick={() => setPaymentMethod("cash")}
-                         className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${paymentMethod === 'cash' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
-                       >
-                         <Banknote size={12} /> Cash
-                       </button>
-                       <button 
-                         onClick={() => setPaymentMethod("online")}
-                         className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${paymentMethod === 'online' ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
-                       >
-                         <CreditCard size={12} /> Online
-                       </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase mb-1.5">Status</label>
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
-                       <button 
-                         onClick={() => setPaymentStatus("paid")}
-                         className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500'}`}
-                       >
-                         <CheckCircle size={12} /> Paid
-                       </button>
-                       <button 
-                         onClick={() => setPaymentStatus("pending")}
-                         className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all flex items-center justify-center gap-1 ${paymentStatus === 'pending' ? 'bg-amber-100 text-amber-700' : 'text-slate-500'}`}
-                       >
-                         <Clock size={12} /> Pending
-                       </button>
-                    </div>
-                  </div>
+               <div className="flex items-center gap-2">
+                 <div className="flex-1">
+                    <input 
+                      type="text" 
+                      value={tableNo}
+                      onChange={(e) => setTableNo(e.target.value)}
+                      placeholder="Table No (Default: Counter)"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-rose-500 text-sm font-semibold text-slate-800"
+                    />
+                 </div>
+                 {/* Compact Payment Toggles */}
+                 <div className="flex bg-slate-100 p-1 rounded-lg shrink-0">
+                    <button onClick={() => setPaymentMethod("cash")} className={`px-3 py-1.5 rounded-md text-xs font-bold ${paymentMethod === 'cash' ? 'bg-white shadow' : 'text-slate-500'}`}>Cash</button>
+                    <button onClick={() => setPaymentMethod("online")} className={`px-3 py-1.5 rounded-md text-xs font-bold ${paymentMethod === 'online' ? 'bg-white shadow' : 'text-slate-500'}`}>Online</button>
+                 </div>
                </div>
              </div>
           </div>
 
-          {/* Cart Items List (Scrollable) */}
-          <div className="flex-1 overflow-y-auto px-6 border-t border-slate-100 bg-slate-50/30">
+          {/* Cart Items List */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 border-t border-slate-100 bg-slate-50/30">
              {cartList.length === 0 ? (
-               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-50">
-                  <ChefHat size={40} />
-                  <span className="text-sm">Select items from menu</span>
+               <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 opacity-50 py-4">
+                  <ChefHat size={30} />
+                  <span className="text-xs">Cart is empty</span>
                </div>
              ) : (
-               <div className="space-y-3 py-4">
+               <div className="space-y-2 py-4">
                  {cartList.map((item) => (
-                   <div key={item._id} className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                   <div key={item._id} className="flex justify-between items-center bg-white p-2 sm:p-3 rounded-xl border border-slate-100 shadow-sm">
                       <div className="flex-1 min-w-0 pr-2">
                          <p className="font-bold text-slate-800 truncate text-sm">{item.name}</p>
                          <p className="text-xs text-slate-500">₹{item.price} x {item.qty}</p>
                       </div>
                       
-                      <div className="flex items-center gap-3 bg-slate-50 rounded-lg p-1">
-                         <button 
-                           onClick={() => updateQty(item._id, -1)}
-                           className="w-6 h-6 flex items-center justify-center bg-white rounded text-slate-600 shadow-sm hover:text-rose-600"
-                         >
-                           {item.qty === 1 ? <Trash2 size={12}/> : <Minus size={12}/>}
+                      <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-1">
+                         <button onClick={() => updateQty(item._id, -1)} className="w-5 h-5 flex items-center justify-center bg-white rounded text-slate-600 shadow-sm hover:text-rose-600">
+                           {item.qty === 1 ? <Trash2 size={10}/> : <Minus size={10}/>}
                          </button>
                          <span className="text-sm font-bold w-4 text-center">{item.qty}</span>
-                         <button 
-                           onClick={() => updateQty(item._id, 1)}
-                           className="w-6 h-6 flex items-center justify-center bg-white rounded text-slate-600 shadow-sm hover:text-rose-600"
-                         >
-                           <Plus size={12}/>
+                         <button onClick={() => updateQty(item._id, 1)} className="w-5 h-5 flex items-center justify-center bg-white rounded text-slate-600 shadow-sm hover:text-rose-600">
+                           <Plus size={10}/>
                          </button>
-                      </div>
-                      
-                      <div className="w-16 text-right font-bold text-slate-800 text-sm">
-                        ₹{item.price * item.qty}
                       </div>
                    </div>
                  ))}
@@ -354,36 +311,21 @@ export default function CreateInvoiceModal({ hotelId, onClose, onInvoiceCreated 
              )}
           </div>
 
-          {/* Footer Total */}
-          <div className="p-6 border-t border-dashed border-slate-200 bg-white">
-             <div className="space-y-2 mb-4 text-sm">
-                <div className="flex justify-between text-slate-500">
-                   <span>Subtotal</span>
-                   <span>₹{subTotal.toFixed(2)}</span>
+          {/* Footer Total & Action */}
+          <div className="p-4 sm:p-6 border-t border-slate-200 bg-white shadow-[0_-5px_15px_rgba(0,0,0,0.05)] z-20">
+             <div className="flex justify-between items-center mb-4">
+                <div className="text-sm text-slate-500">
+                   Total <span className="text-xs">(inc. tax)</span>
                 </div>
-                <div className="flex justify-between text-slate-500">
-                   <span>Taxes (5%)</span>
-                   <span>₹{tax.toFixed(2)}</span>
-                </div>
-             </div>
-             
-             <div className="flex justify-between items-center mb-6">
-                <span className="font-bold text-xl text-slate-800">Total</span>
-                <span className="font-black text-2xl text-rose-600">₹{total.toFixed(2)}</span>
+                <span className="font-black text-xl text-rose-600">₹{total.toFixed(2)}</span>
              </div>
 
              <button
                onClick={handleCreateInvoice}
                disabled={submitting || cartList.length === 0}
-               className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg hover:bg-rose-600 shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+               className="w-full py-3 sm:py-4 bg-slate-900 text-white rounded-xl font-bold text-lg hover:bg-rose-600 shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
              >
-               {submitting ? (
-                 <>
-                   <Loader2 className="animate-spin" size={20} /> Processing...
-                 </>
-               ) : (
-                 `Generate ${paymentStatus === 'paid' ? 'Receipt' : 'Bill'}`
-               )}
+               {submitting ? <Loader2 className="animate-spin" size={20} /> : `Generate Bill`}
              </button>
           </div>
 

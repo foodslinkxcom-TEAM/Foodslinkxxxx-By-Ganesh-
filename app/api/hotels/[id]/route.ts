@@ -1,38 +1,62 @@
-import { connectDB } from "@/lib/db"
-import Hotel from "@/lib/models/Hotel"
-import { type NextRequest, NextResponse } from "next/server"
+import { connectDB } from "@/lib/db";
+import Hotel from "@/lib/models/Hotel"; // Ensure you have this model
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// --- GET: Fetch Single Hotel Details ---
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await connectDB()
-    const { id } = await params
-    const hotel = await Hotel.findById(id)
+    await connectDB();
+    const hotel = await Hotel.findById(params.id);
 
     if (!hotel) {
-      return NextResponse.json({ error: "Hotel not found" }, { status: 404 })
+      return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
     }
 
-    return NextResponse.json(hotel)
+    return NextResponse.json(hotel);
   } catch (error) {
-    console.error("Error fetching hotel:", error)
-    return NextResponse.json({ error: "Failed to fetch hotel" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch hotel" }, { status: 500 });
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+// --- PATCH: Update Hotel Details & Verify ---
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await connectDB()
-    const data = await request.json()
+    const body = await req.json();
+    const { plan, planExpiry, maxTables, locationVerificationRadius, verified } = body;
 
-    const hotel = await Hotel.findByIdAndUpdate(params.id, data, { new: true })
+    await connectDB();
 
-    if (!hotel) {
-      return NextResponse.json({ error: "Hotel not found" }, { status: 404 })
+    const updatedHotel = await Hotel.findByIdAndUpdate(
+      params.id,
+      {
+        plan,
+        planExpiry,
+        maxTables,
+        locationVerificationRadius,
+        verified,
+        // If verified became true just now, we might want to set a 'verifiedAt' timestamp
+        ...(verified ? { verifiedAt: new Date() } : {}) 
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedHotel) {
+      return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
     }
 
-    return NextResponse.json(hotel)
+    return NextResponse.json({ 
+      message: "Hotel updated successfully", 
+      hotel: updatedHotel 
+    });
+
   } catch (error) {
-    console.error("Error updating hotel:", error)
-    return NextResponse.json({ error: "Failed to update hotel" }, { status: 500 })
+    console.error("Update error:", error);
+    return NextResponse.json({ error: "Failed to update hotel" }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 "use client"
 
-import { useParams } from "next/navigation"
-import type { ReactNode } from "react"
+import { useParams,useRouter } from "next/navigation"
+import type { ReactNode } from "react";
+import { useEffect } from 'react';
 import { DashboardLayout as SidebarNavigation, Navbar as TopNavbar } from '@/components/dashboard/Layout'
 import { useMediaQuery } from "@/hooks/use-mobile"
 
@@ -11,8 +12,20 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const params = useParams()
+  const router = useRouter()
   const hotelId = params.id as string
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const fetchData = async() =>{
+    const res = await fetch(`/api/hotels/${hotelId}`)
+    const data = await res.json();   
+    if(!data.verified){
+      router.push(`/dashboard/pending-verification`)
+    }
+  }
+
+  useEffect(()=>{
+    fetchData();
+  },[])
 
   return (
     <SidebarNavigation hotelId={hotelId}>

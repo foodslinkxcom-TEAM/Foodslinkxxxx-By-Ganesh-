@@ -376,7 +376,7 @@ export default function SettingsPage() {
                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Current Plan</p>
                          <h2 className="text-3xl font-black">{hotel.plan}</h2>
                          <p className="text-slate-400 text-sm mt-2 flex items-center gap-2">
-                            <CheckCircle size={14} className="text-emerald-400"/> Status: Active
+                            <CheckCircle size={14} className="text-emerald-400"/> Status: {hotel.verified ? "Active" : "Inactive"}
                          </p>
                       </div>
                       <div className="text-right">

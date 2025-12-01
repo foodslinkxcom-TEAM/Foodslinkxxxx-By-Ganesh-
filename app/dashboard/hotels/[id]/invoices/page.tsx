@@ -16,6 +16,7 @@ import {
   Printer
 } from "lucide-react"
 import CreateInvoiceModal from "@/components/dashboard/CreateInvoiceModal"
+import Link from "next/link"
 
 export default function InvoicesPage() {
   const params = useParams()
@@ -49,9 +50,6 @@ export default function InvoicesPage() {
   const totalRevenue = data?.reduce((acc, curr) => acc + (curr.status === 'paid' ? curr.total : 0), 0) || 0
   const paidCount = data?.filter(o => o.status === 'paid').length || 0
 
-  const handleDownload = (orderId: string) => {
-    window.open(`/hotels/${hotelId}/invoice/${orderId}`, '_blank')
-  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 p-4 md:p-8 relative">
@@ -218,18 +216,13 @@ export default function InvoicesPage() {
 
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-3 mt-auto">
+                    <Link href={`dashboard/hotel/${hotelId}/invoice/${order._id}`}>
                      <button
-                        onClick={() => window.print()} 
-                        className="flex items-center justify-center gap-2 py-2.5 text-slate-600 bg-white border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        className="flex items-center justify-center gap-2 py-2.5 text-white bg-slate-800 rounded-xl text-sm font-bold hover:bg-slate-900 shadow-md transition-all active:scale-95"
                      >
                         <Printer size={16} /> Print
                      </button>
-                     <button
-                        onClick={() => handleDownload(order._id as string)}
-                        className="flex items-center justify-center gap-2 py-2.5 text-white bg-slate-800 rounded-xl text-sm font-bold hover:bg-slate-900 shadow-md transition-all active:scale-95"
-                     >
-                        <Download size={16} /> PDF
-                     </button>
+                     </Link>
                   </div>
 
                 </div>

@@ -28,37 +28,67 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // --- Handlers ---
+// Step 1: Send OTP
+const handleSendOtp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!email) return;
 
-  // Step 1: Send OTP
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    
-    setIsLoading(true);
-    // Simulate API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-      // In real app: await fetch('/api/auth/forgot-password', { email })
-    }, 1500);
-  };
+  setIsLoading(true);
+  try {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
 
-  // Step 2: Verify & Reset
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
-      return;
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to send OTP");
     }
-    
-    setIsLoading(true);
-    // Simulate API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(3);
-      // In real app: await fetch('/api/auth/reset-password', { email, otp, password })
-    }, 2000);
-  };
+
+    setStep(2);
+  } catch (error: any) {
+    alert(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Step 2: Verify OTP & Reset Password
+const handleReset = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (password !== confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
+
+  setIsLoading(true);
+  try {
+    // Assuming the file from previous step is at /api/auth/change-password
+    const res = await fetch('/api/auth/change-password', {
+      method: 'PATCH', 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        otp, 
+        newPassword: password 
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to reset password");
+    }
+
+    setStep(3);
+  } catch (error: any) {
+    alert(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen w-full flex bg-white">
@@ -88,7 +118,7 @@ export default function ForgotPasswordPage() {
           {/* Back Button */}
           {step !== 3 && (
             <Link 
-              href="/login" 
+              href="/auth/login" 
               className="absolute top-8 left-8 md:left-12 flex items-center gap-2 text-slate-500 hover:text-rose-600 transition-colors font-medium text-sm"
             >
               <ArrowLeft size={16} /> Back to Login

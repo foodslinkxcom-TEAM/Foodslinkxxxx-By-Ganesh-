@@ -166,7 +166,7 @@ export default function HotelDashboard() {
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0 py-3">
             <Filter size={20} className="text-slate-400 mr-2 flex-shrink-0" />
             
             {[
