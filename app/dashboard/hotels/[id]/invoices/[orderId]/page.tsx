@@ -132,9 +132,6 @@ export default function InvoicePage() {
       `}</style>
 
       <div className="min-h-screen bg-slate-100 print:bg-white pb-20 print:pb-0">
-        <div className="print:hidden">
-          <HotelNavbar hotelName={hotel.name} onSearch={() => {}} />
-        </div>
 
         <main className="max-w-3xl mx-auto px-4 py-6 print:p-0 print:max-w-none print:w-full">
           

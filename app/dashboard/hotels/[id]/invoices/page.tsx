@@ -40,7 +40,7 @@ export default function InvoicesPage() {
     // Search Filter
     const term = searchQuery.toLowerCase()
     const matchesSearch = 
-      (order._id as string).toLowerCase().includes(term) || 
+      (order?._id as unknown as string).toLowerCase().includes(term) || 
       order.table.toLowerCase().includes(term)
 
     return matchesStatus && matchesSearch
@@ -154,7 +154,7 @@ export default function InvoicesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in slide-in-from-bottom-4 duration-700">
             {filteredOrders.map((order) => (
               <div
-                key={order._id as string}
+                key={order?._id as unknown as string}
                 className="group relative bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
               >
                 {/* Decorative Top Border */}
@@ -176,7 +176,7 @@ export default function InvoicesPage() {
                          </span>
                       </div>
                       <p className="text-xs text-slate-400 font-mono mt-1">
-                        #{(order._id as string).slice(-8).toUpperCase()}
+                        #{(order?._id as unknown as string)?.slice(-8).toUpperCase()}
                       </p>
                     </div>
                     <div className="text-right">
@@ -215,8 +215,8 @@ export default function InvoicesPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-3 mt-auto">
-                    <Link href={`dashboard/hotel/${hotelId}/invoice/${order._id}`}>
+                <div className="flex">
+                    <Link href={`/dashboard/hotels/${hotelId}/invoices/${order._id}`}>
                      <button
                         className="flex items-center justify-center gap-2 py-2.5 text-white bg-slate-800 rounded-xl text-sm font-bold hover:bg-slate-900 shadow-md transition-all active:scale-95"
                      >

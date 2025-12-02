@@ -35,7 +35,7 @@ export function DashboardLayout({ children, hotelId }: DashboardLayoutProps) {
       {/* Main Content Area */}
       <main 
         className={`
-          relative min-h-screen transition-all duration-300 ease-in-out
+          relative min-h-screen transition-all duration-300 ease-in-out print:ml-0 print:p-0
           ${!isMobile ? "ml-72 p-8" : "pb-24"} 
         `}
       >
@@ -65,7 +65,21 @@ function DesktopSidebar({ hotelId }: { hotelId: string }) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-white border-r border-rose-100 p-6 z-40 flex flex-col shadow-2xl shadow-rose-900/5">
+    <>  <style jsx global>{`
+      @media print {
+        @page {
+          margin: 0;
+          size: auto;
+        }
+        body {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          background-color: white !important;
+        }
+        /* Hide default browser headers/footers if possible */
+      }
+    `}</style>
+    <aside className="print:hidden print fixed left-0 top-0 h-screen w-72 bg-white border-r border-rose-100 p-6 z-40 flex flex-col shadow-2xl shadow-rose-900/5">
       {/* Brand */}
       <div className="flex items-center gap-3 mb-10 px-2">
         <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-rose-200">
@@ -117,6 +131,7 @@ function DesktopSidebar({ hotelId }: { hotelId: string }) {
         </Link>
       </div>
     </aside>
+    </>
   )
 }
 
@@ -135,7 +150,7 @@ function MobileNav({ hotelId }: { hotelId: string }) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 z-50">
+    <div className="fixed bottom-6 left-4 right-4 z-50 print:hidden">
       <nav className="flex justify-between items-center bg-white/95 backdrop-blur-xl border border-rose-100 rounded-2xl shadow-xl shadow-rose-900/10 px-6 py-4">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -192,7 +207,7 @@ export function Navbar({ hotelName, hotelId, userName = "Manager" }: HotelNavbar
   }, [])
 
   return (
-    <header className="sticky top-0 z-30 w-full mb-8">
+    <header className="print:hidden sticky top-0 z-30 w-full mb-8">
       {/* Glassmorphism Container */}
       <div className="bg-white/80 backdrop-blur-md border-b border-rose-100 px-6 py-4 rounded-b-2xl md:rounded-2xl md:mx-0 md:mt-2 shadow-sm flex items-center justify-between">
         

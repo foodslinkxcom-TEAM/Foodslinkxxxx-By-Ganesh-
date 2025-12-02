@@ -302,7 +302,7 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
           <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 gap-3">
             <button
               onClick={() =>
-                window.open(`/hotels/${hotelId}/invoice/${order._id}`, "_blank")
+                window.open(`/dashboard/hotels/${hotelId}/invoices/${order._id}`)
               }
               className="flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all text-[10px] sm:text-xs"
             >
@@ -311,7 +311,7 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
             </button>
             <button
               onClick={() =>
-                window.open(`/hotels/${hotelId}/invoice/${order._id}`, "_blank")
+                window.open(`/dashboard/hotels/${hotelId}/invoices/${order._id}`)
               }
               className="flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all text-[10px] sm:text-xs"
             >

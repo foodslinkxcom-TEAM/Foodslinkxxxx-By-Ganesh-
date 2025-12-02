@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const protectedRoutePrefixes = ['/admin', '/dashboard', '/profile'] // add other protected route prefixes
-    const publicPaths = ['/auth/login', '/signup', '/']
+    const publicPaths = ['/auth/login', '/auth/signup', '/']
 
     const path = window.location.pathname
 
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setWithExpiry(AUTH_KEY, token, 3600000) // refresh expiry
             setIsAuthenticated(true)
             // Redirect if user is accessing login/signup but already logged in
-            if (path === '/auth/login' || path === '/signup') {
+            if (path === '/auth/login' || path === '/auth/signup') {
               if(userData?.role === "admin"){
                 router.push("/admin")
               } else {
