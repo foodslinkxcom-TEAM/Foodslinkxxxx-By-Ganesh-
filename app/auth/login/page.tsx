@@ -3,14 +3,18 @@
 import type React from "react"
 import Link from "next/link"
 import { Eye, EyeOff, ChefHat, ArrowLeft } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/contexts/auth-context"
 
 export default function LoginPage() {
-  const { login, error, loading } = useAuth()
+  const { login, error, loading  } = useAuth()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(()=>{
+
+  },[])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation" // Import usePathname
 import { getWithExpiry, setWithExpiry } from "../utils/localStorageWithExpiry"
 
 export interface User {
@@ -17,7 +16,7 @@ interface AuthContextType {
   user: User | null
   loading: boolean
   login: (username: string, password: string) => Promise<void>
-  logout: () => void
+  logout: () => void;
   isAuthenticated: boolean
   error: string
 }
@@ -27,96 +26,112 @@ const AUTH_KEY = "ACCESS_TOKEN"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname() // Use this hook to track URL changes
+  
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [error,setError] = useState("")
+  const [error, setError] = useState("")
 
-
+  // Check Auth Status
   useEffect(() => {
-    const protectedRoutePrefixes = ['/admin', '/dashboard', '/profile'] // add other protected route prefixes
-    const publicPaths = ['/auth/login', '/auth/signup', '/']
-
-    const path = window.location.pathname
+    const protectedRoutePrefixes = ['/admin', '/dashboard', '/profile']
+    const authRoutes = ['/auth/login', '/auth/signup']
+    
+    // Safety check: ensure pathname is defined (it might be null on initial server render)
+    const currentPath = pathname || ""
 
     const checkAuth = async () => {
       const token = getWithExpiry(AUTH_KEY)
+
       if (token) {
         try {
-          const response = await fetch(`/api/auth/me?token=${token}`)
-          if (response.ok) {
-            const userData = await response.json()
-            console.log(userData)
-            setUser(userData)
-            setWithExpiry(AUTH_KEY, token, 3600000) // refresh expiry
-            setIsAuthenticated(true)
-            // Redirect if user is accessing login/signup but already logged in
-            if (path === '/auth/login' || path === '/auth/signup') {
-              if(userData?.role === "admin"){
-                router.push("/admin")
-              } else {
-                router.push(`/dashboard/hotels/${userData.hotelId}`)
+          // Optimization: If we already have the user in state, don't re-fetch unless needed
+          if (!user) {
+            const response = await fetch(`/api/auth/me?token=${token}`)
+            if (response.ok) {
+              const userData = await response.json()
+              setUser(userData)
+              setWithExpiry(AUTH_KEY, token, 3600000) // Refresh expiry
+              
+              // If user is on login page but already logged in, redirect them
+              if (authRoutes.includes(currentPath)) {
+                if (userData?.role === "admin") {
+                  router.replace("/admin") // Use replace to prevent "back" button history issues
+                } else {
+                  router.replace(`/dashboard/hotels/${userData.hotelId || 'demo'}`)
+                }
               }
+            } else {
+              throw new Error("Token invalid")
             }
-          } else {
-            router.push('/auth/login') // token invalid, redirect to login
           }
         } catch (error) {
           console.error('Auth check failed:', error)
-          router.push('/auth/login')
+          localStorage.removeItem(AUTH_KEY)
+          setUser(null)
+          // Only redirect if on a protected route
+          if (protectedRoutePrefixes.some(prefix => currentPath.startsWith(prefix))) {
+            router.push('/auth/login')
+          }
         } finally {
           setLoading(false)
         }
       } else {
-        // Only redirect to login if on protected route
-        if (protectedRoutePrefixes.some(prefix => path.startsWith(prefix))) {
-          router.push('/auth/login') // no token, redirect to login
-        }
+        // No token found
+        setUser(null)
         setLoading(false)
+        if (protectedRoutePrefixes.some(prefix => currentPath.startsWith(prefix))) {
+          router.push('/auth/login')
+        }
       }
     }
 
-    // Run auth check on protected routes or on login/signup if token exists
-    if (
-      protectedRoutePrefixes.some(prefix => path.startsWith(prefix)) ||
-      (publicPaths.includes(path) && path !== '/' && getWithExpiry(AUTH_KEY))
-    ) {
-      checkAuth()
-    } else {
-      setLoading(false)
-    }
-  }, [router])
+    checkAuth()
+    // Add pathname and user to dependencies so this runs on route change or user update
+  }, [router, pathname]) 
 
 
   const login = async (username: string, password: string) => {
     try {
       setError("")
       setLoading(true)
+      
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
-        console.log(data);
-        setUser(data.user)
+        console.log("Login success:", data)
+        
+        // 1. Set Token
         setWithExpiry(AUTH_KEY, data.token, 3600000)
-        setIsAuthenticated(true)
+        
+        // 2. Set User State
+        setUser(data.user)
+        
+        // 3. Refresh Router (Crucial for Next.js App Router)
+        router.refresh() 
+
+        // 4. Handle Redirection
         if (data.user.role === "admin") {
+          console.log("Redirecting to admin...")
           router.push("/admin")
         } else {
-          router.push(`/dashboard/hotels/${data?.user?.hotelId || "demo"}`);
+          const target = `/dashboard/hotels/${data?.user?.hotelId || "demo"}`
+          console.log("Redirecting to:", target)
+          router.push(target)
         }
-
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || "Login failed");
-        console.log(errorData);
+        setError(data.error || "Login failed")
+        console.log("Login error:", data)
       }
-    } catch {
-      setError("An error occurred")
+    } catch (err) {
+      console.error(err)
+      setError("An unexpected error occurred")
     } finally {
       setLoading(false)
     }
@@ -124,12 +139,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    setIsAuthenticated(false)
     localStorage.removeItem(AUTH_KEY)
+    router.push('/auth/login')
+    router.refresh()
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, error, isAuthenticated: !!user || isAuthenticated}}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      login, 
+      logout, 
+      error, 
+      isAuthenticated: !!user 
+    }}>
       {children}
     </AuthContext.Provider>
   )
