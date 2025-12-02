@@ -8,7 +8,7 @@ import { getWithExpiry, setWithExpiry } from "../utils/localStorageWithExpiry"
 export interface User {
   id: string
   username: string
-  role: "admin" | "hotel" | "customer"
+  role: "admin" | "hotel"
   hotelId?: string
 }
 
@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // If user is on login page but already logged in, redirect them
               if (authRoutes.includes(currentPath)) {
                 if (userData?.role === "admin") {
-                  router.replace("/admin") // Use replace to prevent "back" button history issues
+                  router.push("/admin") // Use replace to prevent "back" button history issues
                 } else {
-                  router.replace(`/dashboard/hotels/${userData.hotelId || 'demo'}`)
+                  router.push(`/dashboard/hotels/${userData.hotelId || 'demo'}`)
                 }
               }
             } else {

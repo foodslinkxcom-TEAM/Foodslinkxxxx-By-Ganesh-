@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect,useState } from 'react';
 import { DashboardLayout as SidebarNavigation, Navbar as TopNavbar } from '@/components/dashboard/Layout'
 import { useMediaQuery } from "@/hooks/use-mobile"
+import { useAuth } from "@/lib/contexts/auth-context";
 
 interface LayoutProps {
   children: ReactNode
@@ -16,7 +17,11 @@ const Layout = ({ children }: LayoutProps) => {
   const hotelId = params.id as string
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [requiresTable, setRequiresTable] = useState<true | false>(false)
+  const {user} = useAuth()
   const fetchData = async() =>{
+    if(user?.role !== "hotel") {
+      router.push('/auth/login')
+    }
     const res = await fetch(`/api/hotels/${hotelId}`)
     const data = await res.json();   
     if(!data.verified){
@@ -29,7 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
 
     const pathname = window.location.pathname
     setRequiresTable(!pathname.includes('/invoices/') && !pathname.includes('/pay'))
-  },[])
+  },[user])
 
   if(requiresTable) <>{"true but not woeking ayout"}{children}</>
 
