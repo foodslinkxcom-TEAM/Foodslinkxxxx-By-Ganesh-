@@ -131,6 +131,7 @@ export default function SettingsPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 hotelId, 
+                
                 currentPassword: passwords.current, 
                 newPassword: passwords.new 
             })
