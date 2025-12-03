@@ -64,7 +64,7 @@ export default function PaymentPage() {
              return
            }
 
-           const totalWithTax = Number((orderData.total * 1.05).toFixed(2))
+           const totalWithTax = Number((orderData.total).toFixed(2))
            setFinalAmount(totalWithTax)
 
            const hotelResponse = await fetch(`/api/hotels/${hotelId}`)
@@ -106,9 +106,7 @@ export default function PaymentPage() {
     }
 
     // Polling for Online Payment Success
-    const checkStatus = async () => {
-      if (paymentMode !== 'online') return // Only poll if in online mode
-      
+    const checkStatus = async () => {      
       try {
         const res = await fetch(`/api/orders/${orderId}`)
         if (res.ok) {
@@ -381,32 +379,17 @@ export default function PaymentPage() {
         {/* VIEW 5: CASH CONFIRMATION                */}
         {/* ========================================== */}
         {paymentMode === 'cash' && (
-           <div className="animate-in fade-in duration-500">
-              <div className="bg-white rounded-3xl p-8 text-center border border-slate-200 shadow-lg">
-                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Wallet size={32} className="text-slate-600" />
-                 </div>
-                 <h3 className="text-xl font-bold text-slate-800 mb-2">Pay Cash at Counter?</h3>
-                 <p className="text-slate-500 text-sm mb-8">
-                    Confirming this will mark your order as "Pending Payment". You must pay <span className="font-bold text-slate-900">₹{finalAmount}</span> at the counter.
-                 </p>
-
-                 <button
-                   onClick={confirmCashPayment}
-                   disabled={processingCash}
-                   className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 active:scale-[0.98] transition-all shadow-lg shadow-slate-300 disabled:opacity-70 flex items-center justify-center gap-2"
-                 >
-                   {processingCash ? (
-                     <span className="animate-pulse">Updating...</span>
-                   ) : (
-                     <>
-                        <CheckCircle size={18} />
-                        Confirm & Pay at Counter
-                     </>
-                   )}
-                 </button>
-              </div>
-           </div>
+         <div className="animate-in fade-in duration-500">
+         <div className="bg-white rounded-3xl p-8 text-center border border-slate-200 shadow-lg">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+               <Wallet size={32} className="text-slate-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Pay Cash at Counter</h3>
+            <p className="text-slate-500 text-sm">
+               Please pay <span className="font-bold text-slate-900">₹{finalAmount}</span> at the counter. After payment, you can download your invoice.
+            </p>
+         </div>
+       </div>
         )}
 
       </main>

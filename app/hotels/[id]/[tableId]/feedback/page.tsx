@@ -10,17 +10,12 @@ export default function FeedbackPage() {
   const params = useParams()
   const router = useRouter()
   const hotelId = params.id as string
+  const tableId = params.tableId as string
 
   const [rating, setRating] = useState(0)
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [tableId, setTableId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const storedTable = getWithExpiry("tableId")
-    if (storedTable) setTableId(storedTable)
-  }, [])
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -69,7 +64,7 @@ export default function FeedbackPage() {
   // --- Success View ---
   if (submitted) {
     return (
-      <MainLayout hotelId={hotelId}>
+      <MainLayout hotelId={hotelId} tableId={tableId}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center animate-in zoom-in duration-500">
           <div className="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-rose-200">
             <Heart size={40} className="text-rose-600 fill-rose-600 animate-pulse" />
@@ -88,7 +83,7 @@ export default function FeedbackPage() {
 
   // --- Form View ---
   return (
-    <MainLayout hotelId={hotelId}>
+    <MainLayout hotelId={hotelId} tableId={tableId}>
       <div className="max-w-xl mx-auto px-4 py-8 pb-32">
         
         {/* Header */}

@@ -184,7 +184,7 @@ export default function CartPage() {
       </div>
 
       {/* --- Sticky Footer Checkout Button --- */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 z-30 md:pl-72">
+      <div className="fixed md:bottom-0 bottom-25 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 z-30 md:pl-72">
         <div className="max-w-3xl mx-auto">
           <button
             onClick={() => setIsCheckoutModalOpen(true)}

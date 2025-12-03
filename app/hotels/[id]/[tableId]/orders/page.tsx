@@ -228,7 +228,7 @@ export default function OrdersPage() {
                   {/* Actions Grid */}
                   <div className="grid grid-cols-2 gap-3">
                     <Link
-                      href={`/hotels/${hotelId}/invoice/${order._id}`}
+                      href={`/hotels/${hotelId}/${paramTableId}/invoice/${order._id}`}
                       className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors"
                     >
                       <FileText size={16} />
