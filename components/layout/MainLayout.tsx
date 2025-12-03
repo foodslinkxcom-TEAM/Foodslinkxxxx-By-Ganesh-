@@ -8,9 +8,10 @@ import { useMediaQuery } from "@/hooks/use-mobile"
 interface MainLayoutProps {
   children: ReactNode
   hotelId: string
+  tableId:string
 }
 
-export default function MainLayout({ children, hotelId }: MainLayoutProps) {
+export default function MainLayout({ children, hotelId, tableId }: MainLayoutProps) {
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   return (
@@ -23,7 +24,7 @@ export default function MainLayout({ children, hotelId }: MainLayoutProps) {
       <div className="fixed bottom-0 left-0 w-[300px] h-[300px] bg-blue-50/50 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 -z-10 pointer-events-none" />
 
       {/* --- Navigation --- */}
-      <ResponsiveNav hotelId={hotelId} />
+      <ResponsiveNav hotelId={hotelId} tableId={tableId}/>
 
       {/* --- Main Content Area --- */}
       <main

@@ -32,6 +32,12 @@ interface Category {
 export default function HotelMenuPage() {
   const params = useParams()
   const hotelId = params.id as string
+  
+  // 1. Get Table ID Logic: Try URL params first, then LocalStorage
+  const paramTableId = params.tableId as string // If route is /hotel/[id]/table/[tableId]
+  const storedTableId = getWithExpiry("tableId")
+  const currentTableId = paramTableId || storedTableId
+
   const [hotel, setHotel] = useState<Hotel | null>(null)
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -39,10 +45,16 @@ export default function HotelMenuPage() {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
-  const storedTableId = getWithExpiry("tableId")
 
   useEffect(() => {
+    // Refresh the hotelId expiry
     setWithExpiry("hotelId", hotelId, 2 * 60 * 60 * 1000)
+    
+    // If we found a table ID in params, update the storage
+    if (paramTableId) {
+       setWithExpiry("tableId", paramTableId, 2 * 60 * 60 * 1000)
+    }
+
     const fetchHotelData = async () => {
       if (!hotelId) return
       try {
@@ -72,7 +84,7 @@ export default function HotelMenuPage() {
     }
 
     fetchHotelData()
-  }, [hotelId])
+  }, [hotelId, paramTableId])
 
   // --- Filtering Logic ---
   const categoryNames = ["all", ...categories.map((c) => c.name)]
@@ -84,7 +96,6 @@ export default function HotelMenuPage() {
 
   const filteredMenu = menu.filter((item) => {
     const selectedCategoryId = categoryNameToIdMap[selectedCategory]
-    // Check if category matches (handling both string ID and populated object)
     const itemCatId = typeof item.category === 'object' ? item.category?._id : item.category;
     
     const matchesCategory =
@@ -97,17 +108,14 @@ export default function HotelMenuPage() {
   // --- Loading Skeleton ---
   if (loading) {
     return (
-      <MainLayout hotelId={hotelId}>
+      <MainLayout hotelId={hotelId} tableId={currentTableId}>
         <div className="space-y-6 animate-pulse p-4">
-           {/* Header Skeleton */}
           <div className="h-16 bg-slate-200 rounded-xl w-full mb-4"></div>
-           {/* Category Skeleton */}
           <div className="flex gap-3 overflow-hidden">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-10 w-24 bg-slate-200 rounded-full flex-shrink-0"></div>
             ))}
           </div>
-          {/* Grid Skeleton */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="aspect-[4/5] bg-slate-200 rounded-2xl"></div>
@@ -120,7 +128,7 @@ export default function HotelMenuPage() {
 
   if (!hotel) {
     return (
-      <MainLayout hotelId={hotelId}>
+      <MainLayout hotelId={hotelId} tableId={currentTableId}>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400">
           <UtensilsCrossed size={48} className="mb-4 text-slate-300" />
           <p className="text-lg font-medium">Hotel not found</p>
@@ -130,8 +138,9 @@ export default function HotelMenuPage() {
   }
 
   return (
-    <MainLayout hotelId={hotelId}>
-      {/* Search & Navbar */}
+    // 2. Pass the resolved Table ID to MainLayout
+    <MainLayout hotelId={hotelId} tableId={currentTableId}>
+      
       <HotelNavbar hotelName={hotel.name} onSearch={setSearchQuery} />
 
       <div className="relative">
@@ -145,11 +154,12 @@ export default function HotelMenuPage() {
                 </span>
             </div>
 
-            {storedTableId && (
-                <div className="flex items-center gap-1.5 bg-white border border-rose-100 shadow-sm px-3 py-1.5 rounded-lg">
+            {/* Display Table ID if it exists */}
+            {currentTableId && (
+                <div className="flex items-center gap-1.5 bg-white border border-rose-100 shadow-sm px-3 py-1.5 rounded-lg animate-in slide-in-from-right-4">
                     <MapPin size={14} className="text-rose-500" />
                     <span className="text-xs font-semibold text-slate-600">
-                        Table {storedTableId}
+                        Table {currentTableId}
                     </span>
                 </div>
             )}
@@ -183,9 +193,8 @@ export default function HotelMenuPage() {
         {/* --- Main Grid --- */}
         <div className="px-0">
             {filteredMenu.length > 0 ? (
-                 <MenuList items={filteredMenu} hotelId={hotelId} />
+                 <MenuList items={filteredMenu} hotelId={hotelId} tableId={paramTableId} />
             ) : (
-                // --- Empty State ---
                 <div className="flex flex-col items-center justify-center py-20 text-center px-4">
                     <div className="bg-rose-50 p-4 rounded-full mb-4">
                          <UtensilsCrossed size={32} className="text-rose-300" />
@@ -205,9 +214,8 @@ export default function HotelMenuPage() {
         </div>
       </div>
 
-      {/* --- Details Modal --- */}
       {selectedMenuItem && (
-        <MenuDetailsModal 
+        <MenuDetailsModal tableId={paramTableId}
             item={selectedMenuItem} 
             onClose={() => setSelectedMenuItem(null)} 
             hotelId={hotelId} 

@@ -16,8 +16,8 @@ const Layout = ({ children }: LayoutProps) => {
   const router = useRouter()
   const hotelId = params.id as string
   const isMobile = useMediaQuery("(max-width: 768px)")
-  const [requiresTable, setRequiresTable] = useState<true | false>(false)
   const {user} = useAuth()
+  let hotelName = "FoodslinkX"
   const fetchData = async() =>{
     if(user?.role !== "hotel") {
       router.push('/auth/login')
@@ -27,16 +27,14 @@ const Layout = ({ children }: LayoutProps) => {
     if(!data.verified){
       router.push(`/dashboard/pending-verification`)
     }
+    hotelName = data?.name
   }
 
   useEffect(()=>{
     fetchData();
 
-    const pathname = window.location.pathname
-    setRequiresTable(!pathname.includes('/invoices/') && !pathname.includes('/pay'))
   },[user])
 
-  if(requiresTable) <>{"true but not woeking ayout"}{children}</>
 
 
   return (
@@ -54,7 +52,7 @@ const Layout = ({ children }: LayoutProps) => {
          We render it here so it's always present.
       */}
         
-           <TopNavbar hotelName="FoodsLinkX" hotelId={hotelId} />
+           <TopNavbar hotelName={hotelName} hotelId={hotelId} />
        
 
         {/* Page Content */}

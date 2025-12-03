@@ -7,19 +7,20 @@ import { usePathname } from "next/navigation"
 import { useMediaQuery } from "@/hooks/use-mobile"
 
 interface ResponsiveNavProps {
-  hotelId: string
+  hotelId: string;
+  tableId:string;
 }
 
-export default function ResponsiveNav({ hotelId }: ResponsiveNavProps) {
+export default function ResponsiveNav({ hotelId,tableId }: ResponsiveNavProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMediaQuery("(max-width: 768px)")
 
   const navItems = [
-    { icon: Home, label: "Menu", path: `/hotels/${hotelId}` },
-    { icon: ShoppingCart, label: "Cart", path: `/hotels/${hotelId}/cart` },
-    { icon: ClipboardList, label: "Orders", path: `/hotels/${hotelId}/orders` },
-    { icon: MessageSquare, label: "Feedback", path: `/hotels/${hotelId}/feedback` },
+    { icon: Home, label: "Menu", path: `/hotels/${hotelId}/${tableId}` },
+    { icon: ShoppingCart, label: "Cart", path: `/hotels/${hotelId}/${tableId}/cart` },
+    { icon: ClipboardList, label: "Orders", path: `/hotels/${hotelId}/${tableId}/orders` },
+    { icon: MessageSquare, label: "Feedback", path: `/hotels/${hotelId}/${tableId}/feedback` },
   ]
 
   const isActive = (path: string) => pathname === path

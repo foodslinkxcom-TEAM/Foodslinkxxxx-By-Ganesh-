@@ -14,21 +14,34 @@ import {
 
 // ... (Keep Interfaces same as before)
 interface OrderItem {
-  menuItemId: string
+  _id: string
   name: string
   price: number
   quantity: number
   customization?: string
 }
 
+interface Charges {
+  label:string;
+  amount:number;
+  type:string;
+  _id:string;
+}
+interface Customer{
+  name:string
+  contact:number
+}
+
 interface Order {
   _id: string
-  hotelId: string
   table: string
   items: OrderItem[]
   total: number
-  status: string
+  status: "pending" | "cooking" | "served" | "paid"
   createdAt: string
+  additionalCharges:Charges[]
+  subTotal:number
+  customer:Customer
 }
 
 interface Hotel {
@@ -192,7 +205,8 @@ export default function InvoicePage() {
             <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm mb-8">
               <div>
                 <p className="text-slate-400 font-medium text-xs uppercase tracking-wider mb-1">Billed To</p>
-                <p className="font-bold text-slate-800">Guest</p>
+                <p className="font-bold text-slate-800">Name: {order?.customer.name}</p>
+                <p className="font-bold text-slate-800">Contact: {order?.customer.contact}</p>
                 <p className="text-slate-600">Table No: {order.table}</p>
               </div>
               <div className="text-right">
@@ -240,17 +254,18 @@ export default function InvoicePage() {
               <div className="w-full md:w-1/2 space-y-3">
                 <div className="flex justify-between text-slate-600 text-sm">
                   <span>Subtotal</span>
-                  <span className="font-medium">₹{subTotal.toFixed(2)}</span>
+                  <span className="font-medium">₹{order.subTotal}</span>
                 </div>
-                <div className="flex justify-between text-slate-600 text-sm">
-                  <span>Tax (5%)</span>
-                  <span className="font-medium">₹{taxAmount.toFixed(2)}</span>
-                </div>
-                
+                {order?.additionalCharges?.map((c)=>(
+                <div className="flex justify-between text-slate-600 text-sm" key={c._id}>
+                <span>{c?.label}</span>
+                <span className="font-medium">₹{c?.amount}</span>
+              </div>
+              ))}
                 <div className="border-t-2 border-slate-800 my-2 pt-2 flex justify-between items-center">
                   <span className="font-bold text-slate-900 text-lg">Grand Total</span>
                   <span className="font-extrabold text-rose-600 text-2xl">
-                    ₹{grandTotal.toFixed(2)}
+                    ₹{order.total.toFixed(2)}
                   </span>
                 </div>
               </div>

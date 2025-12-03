@@ -215,15 +215,14 @@ export default function InvoicesPage() {
                   </div>
 
                   {/* Action Buttons */}
-                <div className="flex">
-                    <Link href={`/dashboard/hotels/${hotelId}/invoices/${order._id}`}>
-                     <button
-                        className="flex items-center justify-center gap-2 py-2.5 text-white bg-slate-800 rounded-xl text-sm font-bold hover:bg-slate-900 shadow-md transition-all active:scale-95"
-                     >
-                        <Printer size={16} /> Print
-                     </button>
-                     </Link>
-                  </div>
+                  <div className="flex">
+  <Link href={`/dashboard/hotels/${hotelId}/invoices/${order._id}`}>
+    <button className="group flex items-center gap-2 px-4 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-xl text-sm font-bold hover:border-slate-300 hover:text-slate-900 hover:shadow-md transition-all active:scale-95">
+      <Printer size={16} className="text-slate-400 group-hover:text-slate-800 transition-colors" />
+      Print
+    </button>
+  </Link>
+</div>
 
                 </div>
               </div>

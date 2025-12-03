@@ -17,6 +17,17 @@ interface OrderItem {
   customization?: string
 }
 
+interface Charges {
+  label:string;
+  amount:number;
+  type:string;
+}
+
+interface Customer{
+  name:string
+  contact:number
+}
+
 interface Order {
   _id: string
   table: string
@@ -24,12 +35,17 @@ interface Order {
   total: number
   status: "pending" | "cooking" | "served" | "paid"
   createdAt: string
+  additionalCharges:Charges[]
+  subTotal:number
+  paymentMethod:string
+  paymentStatus:string
+  deviceId:string
+  customer:Customer
 }
 
 interface OrderCardProps {
   order: Order
   hotelId: string
-  // New prop: function to call when clicked
   onClick: (order: Order) => void
 }
 
@@ -54,6 +70,7 @@ export default function OrderCard({ order, hotelId, onClick }: OrderCardProps) {
       default: return <Clock size={14} />
     }
   }
+  
 
   return (
     <div 

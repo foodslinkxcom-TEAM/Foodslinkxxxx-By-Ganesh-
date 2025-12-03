@@ -5,6 +5,7 @@ import {
   Clock, User, ChefHat, FastForward, Utensils,
   DollarSign, CheckCircle, Printer, Download, X
 } from "lucide-react"
+import Link from "next/link"
 
 interface OrderItem {
   _id: string
@@ -14,6 +15,17 @@ interface OrderItem {
   customization?: string
 }
 
+interface Charges {
+  label:string;
+  amount:number;
+  type:string;
+  _id:string;
+}
+interface Customer{
+  name:string
+  contact:number
+}
+
 interface Order {
   _id: string
   table: string
@@ -21,6 +33,9 @@ interface Order {
   total: number
   status: "pending" | "cooking" | "served" | "paid"
   createdAt: string
+  additionalCharges:Charges[]
+  subTotal:number
+  customer:Customer
 }
 
 interface Props {
@@ -64,8 +79,10 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
 
   const steps = ["pending", "cooking", "served", "paid"] as const
   const currentStepIndex = steps.indexOf(order.status)
-  const tax = order.total * 0.05
-  const subtotal = order.total - tax
+  const chargesTotal = order?.additionalCharges?.reduce((sum, charge) => {
+    return sum + (charge.amount || 0);
+  }, 0) || 0;
+  const subtotal = order?.subTotal || 0;
 
   return (
    
@@ -110,7 +127,7 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
                   })}
                 </span>
                 <span className="flex items-center gap-1">
-                  <User size={14} /> Guest
+                  <User size={14} /> {order?.customer?.name} ({order?.customer?.contact})
                 </span>
                 <span className="font-mono text-[11px] opacity-70">
                   #{order._id.slice(-6).toUpperCase()}
@@ -185,7 +202,9 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
           <section className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-dashed border-slate-300 flex justify-between items-end gap-4">
             <div className="text-xs sm:text-sm text-slate-500">
               <p>Subtotal: ₹{subtotal.toFixed(2)}</p>
-              <p>Taxes (5%): ₹{tax.toFixed(2)}</p>
+              {order?.additionalCharges?.map((c)=>(
+                <p key={c._id}>{c?.label}: ₹{c?.amount}</p>
+              ))}
             </div>
             <div className="text-right">
               <span className="text-xs sm:text-sm text-slate-400 font-medium">
@@ -300,24 +319,19 @@ export function OrderDetailsModal({ open, onClose, order, hotelId }: Props) {
 
           {/* Bottom actions */}
           <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-2 gap-3">
-            <button
-              onClick={() =>
-                window.open(`/dashboard/hotels/${hotelId}/invoices/${order._id}`)
-              }
+            
+            <Link href={`/dashboard/hotels/${hotelId}/invoices/${order._id}`}
               className="flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all text-[10px] sm:text-xs"
             >
               <Printer size={18} />
               <span className="font-bold">Print Bill</span>
-            </button>
-            <button
-              onClick={() =>
-                window.open(`/dashboard/hotels/${hotelId}/invoices/${order._id}`)
-              }
+            </Link>
+            <Link href={`/dashboard/hotels/${hotelId}/invoices/${order._id}`}
               className="flex flex-col items-center justify-center gap-1 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all text-[10px] sm:text-xs"
             >
               <Download size={18} />
               <span className="font-bold">Download PDF</span>
-            </button>
+            </Link>
           </div>
         </div>
       </div>

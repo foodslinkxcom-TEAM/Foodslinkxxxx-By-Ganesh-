@@ -37,6 +37,7 @@ interface Order {
 export default function OrdersPage() {
   const params = useParams()
   const hotelId = params.id as string
+  const paramTableId = params.tableId as string
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [hotelName, setHotelName] = useState("")
@@ -122,7 +123,7 @@ export default function OrdersPage() {
   // --- Render: Loading Skeleton ---
   if (loading) {
     return (
-      <MainLayout hotelId={hotelId}>
+      <MainLayout hotelId={hotelId} tableId={paramTableId}>
         <div className="p-6 space-y-4 max-w-3xl mx-auto">
           {[1, 2].map((i) => (
             <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
@@ -133,7 +134,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <MainLayout hotelId={hotelId}>
+    <MainLayout hotelId={hotelId} tableId={paramTableId}>
       <HotelNavbar hotelName={hotelName} onSearch={() => {}} />
 
       <div className="max-w-3xl mx-auto px-4 py-6 pb-32">
@@ -236,7 +237,7 @@ export default function OrdersPage() {
                     
                     {order.status !== 'paid' ? (
                       <Link
-                        href={`/hotels/${hotelId}/pay?orderId=${order._id}`}
+                        href={`/hotels/${hotelId}/${paramTableId}/pay?orderId=${order._id}`}
                         className="flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-semibold text-sm hover:bg-rose-700 shadow-md shadow-rose-200 transition-all"
                       >
                         <CreditCard size={16} />

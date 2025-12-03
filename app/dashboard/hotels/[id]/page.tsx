@@ -25,6 +25,16 @@ interface Order {
   status: "pending" | "cooking" | "served" | "paid"
   createdAt: string
   updatedAt?: string
+  additionalCharges:any, 
+  subTotal:number,
+  paymentMethod:string,
+  paymentStatus:string,
+  deviceId:string
+  customer:Customer
+}
+interface Customer{
+  name:string
+  contact:number
 }
 
 export default function HotelDashboard() {
@@ -57,6 +67,7 @@ export default function HotelDashboard() {
       }
     }
     fetchHotel()
+    console.log(data)
   }, [hotelId])
 
   // Calculate Stats
@@ -147,7 +158,7 @@ export default function HotelDashboard() {
             color="purple" 
           />
         </div>
-
+{/* <pre>{JSON.stringify(data,null,2)}</pre> */}
         {/* --- Controls Toolbar --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col lg:flex-row gap-4 justify-between items-center sticky top-20 z-20 animate-in slide-in-from-bottom-2 duration-500">
           
@@ -227,7 +238,7 @@ export default function HotelDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredOrders?.map((order: Order) => (
               <div key={order._id} className="animate-in zoom-in duration-300">
-                <OrderCard order={order} hotelId={hotelId} onClick={(clickedOrder) => setSelectedOrder(clickedOrder)}/>
+                <OrderCard order={order} hotelId={hotelId} onClick={(clickedOrder:Order) => setSelectedOrder(clickedOrder)}/>
               </div>
             ))}
           </div>

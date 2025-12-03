@@ -272,7 +272,7 @@ const handleReset = async (e: React.FormEvent) => {
                 Your password has been updated successfully. You can now log in with your new credentials.
               </p>
               
-              <Link href="/login">
+              <Link href="/auth/login">
                 <button className="w-full bg-rose-600 text-white py-3.5 rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/30">
                   Back to Login
                 </button>

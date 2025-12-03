@@ -5,7 +5,21 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     await connectDB()
-    const order = await Order.findByIdAndUpdate(params.id, { status: "paid" }, { new: true })
+    
+    // 1. Read the data sent from the frontend
+    const body = await request.json() 
+    const { paymentMethod, status } = body
+
+    // 2. Update both status and paymentMethod
+    const order = await Order.findByIdAndUpdate(
+      params.id, 
+      { 
+        status: status || "paid", 
+        paymentStatus:status || "paid", 
+        paymentMethod: paymentMethod // Uses the value from request
+      }, 
+      { new: true }
+    )
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })

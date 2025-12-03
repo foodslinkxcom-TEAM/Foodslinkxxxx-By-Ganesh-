@@ -1,247 +1,262 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { 
-  QrCode, 
   Download, 
   ExternalLink, 
-  Table, 
   Printer, 
-  CheckCircle,
-  Link as LinkIcon,
-  Copy
+  UtensilsCrossed,
+  ScanLine,
+  Smartphone
 } from 'lucide-react'
 
 export default function QRPage() {
   const params = useParams()
   const hotelId = params.id as string
   
-  // State
   const [hotelData, setHotelData] = useState<any>(null)
   const [maxTables, setMaxTables] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<number | null>(null)
   const [origin, setOrigin] = useState("")
-  const [copied, setCopied] = useState(false)
 
-  // 1. Initialize & Fetch Data
   useEffect(() => {
-    // Set origin on client-side only
-    if (typeof window !== 'undefined') {
-      setOrigin(window.location.origin)
-    }
+    if (typeof window !== 'undefined') setOrigin(window.location.origin)
 
+    // Mock Fetch
     const fetchHotel = async () => {
       try {
         const res = await fetch(`/api/hotels/${hotelId}`)
-        if (!res.ok) throw new Error('Failed to fetch hotel data')
-        const data = await res.json()
-        setHotelData(data)
-        setMaxTables(data.maxTables || 0)
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+        if (res.ok) {
+           const data = await res.json()
+           setHotelData(data)
+           setMaxTables(data.maxTables || 0)
+        }
+      } catch (err) { console.error(err) } 
+      finally { setLoading(false) }
     }
     fetchHotel()
   }, [hotelId])
 
-  // --- Logic Helpers ---
-
-  // Generate the actual URL that customers will visit
   const getMenuUrl = (tableNumber: number | string) => {
-    return `${origin}/hotels/${hotelId}?table=${tableNumber}`
+    return `${origin}/hotels/${hotelId}/${tableNumber}`
   }
 
-  // Generate the QR Code Image URL (using an external API for generation)
+  // API URL for Image: Using ecc=H (High) to allow center coverage, color=1e293b (Slate-800)
   const getQrImageUrl = (tableNumber: number) => {
     const dataUrl = getMenuUrl(tableNumber)
-    // Using simple styling: Dark Blue/Black dots on transparent/white bg
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(dataUrl)}&color=0f172a&bgcolor=ffffff&margin=10`
+    return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(dataUrl)}&color=1e293b&bgcolor=ffffff&ecc=H&margin=2`
   }
 
-  // Handle Download (Single)
-  const downloadQRCode = async (tableNumber: number) => {
+  // --- THE ARTIST: Canvas Generator for "Designed" Downloads ---
+  const generateDesignedQR = async (tableNumber: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject('No context')
+
+      const size = 1200 // High Resolution
+      canvas.width = size
+      canvas.height = size + 200 // Extra space for footer
+
+      const img = new Image()
+      img.crossOrigin = "Anonymous"
+      img.src = getQrImageUrl(tableNumber)
+
+      img.onload = () => {
+        // 1. Background
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        // 2. Decorative Outer Border
+        ctx.strokeStyle = '#e11d48' // Rose-600
+        ctx.lineWidth = 20
+        ctx.strokeRect(40, 40, size - 80, size + 120)
+
+        // 3. Draw QR
+        const qrPadding = 100
+        ctx.drawImage(img, qrPadding, qrPadding, size - (qrPadding*2), size - (qrPadding*2))
+
+        // 4. Center Badge (White Circle + Red Ring)
+        const centerX = size / 2
+        const centerY = size / 2
+        
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, 140, 0, 2 * Math.PI)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+        ctx.lineWidth = 15
+        ctx.strokeStyle = '#e11d48'
+        ctx.stroke()
+
+        // 5. Table Number (Inside Badge)
+        ctx.fillStyle = '#0f172a'
+        ctx.font = 'bold 140px Arial, sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`${tableNumber}`, centerX, centerY + 15)
+        
+        // Label "TABLE" above number
+        ctx.fillStyle = '#64748b'
+        ctx.font = 'bold 30px Arial, sans-serif'
+        ctx.fillText('TABLE', centerX, centerY - 80)
+
+        // 6. Footer Text
+        ctx.fillStyle = '#334155'
+        ctx.font = 'bold 50px Arial, sans-serif'
+        ctx.fillText('Powered by foodslink.com', centerX, size + 80)
+
+        resolve(canvas.toDataURL('image/png'))
+      }
+      img.onerror = reject
+    })
+  }
+
+  const handleDownload = async (tableNumber: number) => {
     setDownloading(tableNumber)
     try {
-      const qrUrl = getQrImageUrl(tableNumber)
-      const response = await fetch(qrUrl)
-      const blob = await response.blob()
-      
-      const objectUrl = URL.createObjectURL(blob)
+      const url = await generateDesignedQR(tableNumber)
       const link = document.createElement('a')
-      link.href = objectUrl
-      link.download = `${hotelData?.name || 'Hotel'}-Table-${tableNumber}.png`
+      link.href = url
+      link.download = `Table-${tableNumber}-Designed.png`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      URL.revokeObjectURL(objectUrl)
-    } catch (error) {
-      console.error('Download failed:', error)
-      alert("Failed to download. Try right-clicking the image.")
+    } catch (e) {
+      alert('Error generating image')
     } finally {
       setDownloading(null)
     }
   }
 
-  // Handle Download (Bulk)
-  const downloadAllQRCodes = () => {
-    if (!confirm(`Download ${maxTables} QR code images?`)) return
-    
-    Array.from({ length: maxTables }, (_, i) => i + 1).forEach((tableNumber, index) => {
-      setTimeout(() => downloadQRCode(tableNumber), index * 500)
-    })
-  }
-
-  // Copy Master Link
-  const copyMasterLink = () => {
-    const url = getMenuUrl("{table_no}")
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-           <div className="w-12 h-12 border-4 border-rose-200 border-t-rose-600 rounded-full animate-spin"></div>
-           <p className="text-slate-500 font-medium">Loading QR System...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) return <div className="p-8 text-center text-rose-500 font-bold">Error: {error}</div>
+  if (loading) return <div className="h-screen flex items-center justify-center text-rose-500 font-bold">Loading...</div>
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-100 p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
         
-        {/* --- Header --- */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in slide-in-from-top-4 duration-500 print:hidden">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-              <span className="bg-rose-100 p-2.5 rounded-xl text-rose-600">
-                <QrCode size={32} />
-              </span>
-              QR Management
-            </h1>
-            <p className="text-slate-500 mt-1 ml-1">
-              {hotelData?.name}: {maxTables} Tables Configured
-            </p>
-          </div>
-        </div>
-
-        {/* --- Dynamic URL Banner --- */}
-        <div className="bg-white rounded-2xl border border-rose-100 shadow-sm p-6 flex flex-col md:flex-row gap-6 items-center animate-in fade-in duration-500 print:hidden">
-           <div className="p-3 bg-rose-50 rounded-full text-rose-600">
-              <LinkIcon size={24} />
-           </div>
-           <div className="flex-1 w-full">
-              <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide mb-1">Master Menu Link Pattern</h3>
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-2 rounded-lg">
-                 <code className="text-sm text-slate-600 flex-1 truncate font-mono px-2">
-                    {getMenuUrl("1")} <span className="text-rose-400 font-bold">(Example)</span>
-                 </code>
-                 <button 
-                   onClick={copyMasterLink}
-                   className="p-2 hover:bg-white rounded-md text-slate-400 hover:text-rose-600 transition-colors"
-                   title="Copy Link"
-                 >
-                   {copied ? <CheckCircle size={18} className="text-green-500"/> : <Copy size={18} />}
-                 </button>
-              </div>
-              <p className="text-xs text-slate-400 mt-2">
-                 This is the base URL pattern. Each QR code appends <code>?table=ID</code> to identify the order source.
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-4">
+           <div>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+                 QR Manager
+              </h1>
+              <p className="text-slate-500 font-medium">
+                 {hotelData?.name || 'Restaurant'} • {maxTables} Active Tables
               </p>
            </div>
-        </div>
-
-        {/* --- Toolbar --- */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sticky top-4 z-20 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
-           <div className="flex items-center gap-2 text-sm text-slate-600">
-              <CheckCircle size={16} className="text-emerald-500" />
-              <span>Ready for printing</span>
-           </div>
-
-           <div className="flex w-full md:w-auto gap-3">
-              <button
-                onClick={downloadAllQRCodes}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-rose-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition-all active:scale-95"
+           
+           <div className="flex gap-3">
+              <button 
+                onClick={() => window.print()}
+                className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
               >
-                <Download size={18} /> Download All
+                 <Printer size={18} /> Print All
               </button>
            </div>
         </div>
 
-        {/* --- QR Grid (This part prints) --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in slide-in-from-bottom-8 duration-700 print:grid-cols-3 print:gap-8">
-          {Array.from({ length: maxTables }, (_, i) => i + 1).map((tableNumber) => (
-            <div
-              key={tableNumber}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col print:shadow-none print:border-2 print:break-inside-avoid"
-            >
-              {/* Card Header */}
-              <div className="bg-white border-b border-slate-100 p-4 flex justify-between items-center">
-                 <div className="flex items-center gap-2">
-                    <div className="bg-rose-100 p-1.5 rounded-md text-rose-600">
-                        <Table size={16} />
-                    </div>
-                    <span className="font-bold text-slate-800">Table {tableNumber}</span>
-                 </div>
-                 <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-mono">
-                    #{tableNumber}
-                 </span>
-              </div>
+        {/* The Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-10">
+          {Array.from({ length: maxTables }, (_, i) => i + 1).map((tableNum) => (
+            
+            // === THE CARD DESIGN START ===
+            <div key={tableNum} className="group relative">
+              
+              {/* Card Container (Visual Only) */}
+              <div className="relative bg-white rounded-[32px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] border border-white overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(225,29,72,0.15)]">
+                
+                {/* Decorative Top Bar */}
+                <div className="h-3 bg-gradient-to-r from-rose-500 to-orange-400 w-full" />
 
-              {/* QR Image Area */}
-              <div className="p-6 flex flex-col items-center justify-center flex-1">
-                 <div className="w-48 h-48 bg-white p-1">
-                    <img
-                      src={getQrImageUrl(tableNumber)}
-                      alt={`Table ${tableNumber} QR`}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
+                {/* Card Content */}
+                <div className="p-8 flex flex-col items-center">
+                  
+                  {/* Top Icon */}
+                  <div className="mb-4 flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-1.5 rounded-full">
+                     <UtensilsCrossed size={14} />
+                     <span className="text-[10px] font-black tracking-widest uppercase">Scan To Order</span>
+                  </div>
+
+                  {/* QR Wrapper */}
+                  <div className="relative w-52 h-52">
+                    {/* The QR Image */}
+                    <img 
+                      src={getQrImageUrl(tableNum)}
+                      alt="QR"
+                      className="w-full h-full object-contain mix-blend-multiply opacity-90"
+                      crossOrigin="anonymous"
                     />
-                 </div>
-                 <p className="mt-2 text-xs font-bold text-rose-600 uppercase tracking-widest">Scan to Order</p>
-              </div>
+                    
+                    {/* The Center Badge Overlay */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full border-[3px] border-rose-500 flex flex-col items-center justify-center shadow-lg">
+                       <span className="text-[8px] font-bold text-slate-400 uppercase">Table</span>
+                       <span className="text-2xl font-black text-slate-800 leading-[0.8]">{tableNum}</span>
+                    </div>
+                  </div>
 
-              {/* Action Footer (Hidden in Print) */}
-              <div className="p-3 border-t border-slate-100 bg-slate-50 flex gap-2 print:hidden">
-                 <button
-                    onClick={() => downloadQRCode(tableNumber)}
-                    disabled={downloading === tableNumber}
-                    className="flex-1 flex items-center justify-center gap-2 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition-colors shadow-sm"
-                 >
-                    {downloading === tableNumber ? (
-                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                       <Download size={16} />
-                    )}
-                    <span className="hidden sm:inline">Save</span>
-                 </button>
-                 
-                 <a
-                    href={getMenuUrl(tableNumber)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-sm"
-                    title="Test Link (Open in new tab)"
-                 >
-                    <ExternalLink size={18} />
-                 </a>
+                  {/* Hotel Name */}
+                  <h3 className="mt-4 font-bold text-slate-800 text-lg text-center leading-tight">
+                    {hotelData?.name || 'Restaurant'}
+                  </h3>
+
+                  {/* Divider */}
+                  <div className="w-full border-t border-dashed border-slate-200 my-4 relative">
+                     <div className="absolute -left-10 -top-2 w-4 h-4 bg-slate-100 rounded-full" />
+                     <div className="absolute -right-10 -top-2 w-4 h-4 bg-slate-100 rounded-full" />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
+                      Powered by
+                    </p>
+                    <p className="text-sm font-bold text-rose-600 flex items-center justify-center gap-1">
+                      foodslink.com
+                    </p>
+                  </div>
+                </div>
+
+                {/* Hover Actions (Overlay) */}
+                <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                   <button 
+                     onClick={() => handleDownload(tableNum)}
+                     disabled={downloading === tableNum}
+                     className="bg-white text-rose-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     title="Download Image"
+                   >
+                      {downloading === tableNum ? (
+                        <div className="w-5 h-5 border-2 border-rose-200 border-t-rose-600 rounded-full animate-spin" />
+                      ) : (
+                        <Download size={20} />
+                      )}
+                   </button>
+                   <a 
+                     href={getMenuUrl(tableNum)} 
+                     target="_blank"
+                     className="bg-slate-900 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     title="Test Link"
+                   >
+                      <ExternalLink size={20} />
+                   </a>
+                </div>
+
               </div>
+              {/* === THE CARD DESIGN END === */}
+
             </div>
           ))}
         </div>
 
-        {/* Print Styles Helper */}
-        
+        {/* Print Styles */}
+        <style jsx global>{`
+          @media print {
+            body { background: white; -webkit-print-color-adjust: exact; }
+            .shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] { box-shadow: none !important; border: 1px solid #ddd; }
+            button, a { display: none !important; }
+          }
+        `}</style>
 
       </div>
     </div>

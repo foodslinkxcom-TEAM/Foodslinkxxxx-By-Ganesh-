@@ -1,47 +1,34 @@
 import { connectDB } from "@/lib/db";
 import User from "@/lib/models/User";
-import { getAuthCookie, verifyToken } from "@/lib/auth";
+import Otp from "@/lib/models/Otp"; // Import the separate OTP model
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 
-// --- 1. POST: Change Password using Old Password (Requires Login) ---
+// --- 1. POST: Change Password using Old Password (Logged in or knowing credentials) ---
 export async function POST(request: NextRequest) {
   try {
-    // A. Authentication Check (From your reference)
-    let token = request.nextUrl.searchParams.get("token");
-    if (!token) token = await getAuthCookie();
+    const { email, oldPassword, newPassword } = await request.json();
 
-    if (!token) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    // B. Logic
-    const { oldPassword, newPassword } = await request.json();
-
-    if (!oldPassword || !newPassword) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!email || !oldPassword || !newPassword) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     await connectDB();
-    // @ts-ignore - Ignoring TS error for generic payload type
-    const user = await User.findById(payload.userId);
+
+    // 1. Find User by Email (as requested)
+    const user = await User.findOne({ email });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // C. Verify Old Password
+    // 2. Verify Old Password
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
       return NextResponse.json({ error: "Incorrect old password" }, { status: 400 });
     }
 
-    // D. Hash and Save New Password
+    // 3. Hash and Save New Password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
     await user.save();
@@ -54,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// --- 2. PATCH: Reset Password using OTP (Does not require Login) ---
+// --- 2. PATCH: Reset Password using OTP (Forgot Password flow) ---
 export async function PATCH(request: NextRequest) {
   try {
     const { email, otp, newPassword } = await request.json();
@@ -64,27 +51,33 @@ export async function PATCH(request: NextRequest) {
     }
 
     await connectDB();
+
+    // A. Verify OTP using the OTP Model
+    // We search by Email. If the doc exists, it hasn't expired (TTL) yet.
+    const otpRecord = await Otp.findOne({ email });
+
+    if (!otpRecord) {
+      return NextResponse.json({ error: "OTP expired or invalid" }, { status: 400 });
+    }
+
+    // Check if the code matches exactly
+    if (otpRecord.otp !== otp) {
+      return NextResponse.json({ error: "Invalid OTP" }, { status: 400 });
+    }
+
+    // B. Find the User
     const user = await User.findOne({ email });
-
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: "User account not found" }, { status: 404 });
     }
 
-    // A. Verify OTP (Assumes user model has 'otp' and 'otpExpires' fields)
-    // Ensure otp matches and hasn't expired (current time < expiry time)
-    if (user.otp !== otp || user.otpExpires < Date.now()) {
-      return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
-    }
-
-    // B. Hash and Save New Password
+    // C. Hash and Save New Password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
-    
-    // C. Clear OTP fields after use
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    
     await user.save();
+
+    // D. Delete the used OTP immediately (security best practice)
+    await Otp.deleteOne({ _id: otpRecord._id });
 
     return NextResponse.json({ message: "Password reset successfully" });
 

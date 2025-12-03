@@ -14,16 +14,18 @@ interface MenuItem {
   price: number
   category: string
   available: boolean
-  image?: string
+  imageUrl?: string
+  imageFileUrl?:string
 }
 
 interface MenuDetailsModalProps {
   item: MenuItem
   onClose: () => void
   hotelId: string
+  tableId:string
 }
 
-export default function MenuDetailsModal({ item, onClose, hotelId }: MenuDetailsModalProps) {
+export default function MenuDetailsModal({ item, onClose, hotelId,tableId }: MenuDetailsModalProps) {
   const router = useRouter()
   const { addItem } = useCart()
   const [quantity, setQuantity] = useState(1)
@@ -61,7 +63,7 @@ export default function MenuDetailsModal({ item, onClose, hotelId }: MenuDetails
       addItem(newItem)
       handleClose()
       // Optional: Delay navigation slightly to show success state if desired
-      router.push(`/hotels/${hotelId}/cart`)
+      router.push(`/hotels/${hotelId}/${tableId}/cart`)
     } catch (error) {
       console.error("Error adding to cart:", error)
       setAdding(false)
@@ -89,9 +91,9 @@ export default function MenuDetailsModal({ item, onClose, hotelId }: MenuDetails
         
         {/* --- 1. Header Image Area --- */}
         <div className="relative h-30 md:h-64 flex-shrink-0 bg-rose-100">
-          {item.image ? (
+          {item.imageUrl || item?.imageFileUrl ? (
             <img 
-              src={item.image} 
+            src={item.imageUrl ||item?.imageFileUrl || "/placeholder.svg"}
               alt={item.name} 
               className="w-full h-full object-cover"
             />

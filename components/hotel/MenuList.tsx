@@ -11,15 +11,17 @@ interface MenuItem {
   price: number
   category: any
   available: boolean
-  image?: string
+  imageUrl?: string
+  imageFileUrl?:string
 }
 
 interface MenuListProps {
   items: MenuItem[]
   hotelId: string
+  tableId:string
 }
 
-const MenuList = ({ items, hotelId }: MenuListProps) => {
+const MenuList = ({ items, hotelId,tableId }: MenuListProps) => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
 
   const handleSelectItem = (item: MenuItem) => {
@@ -49,7 +51,7 @@ const MenuList = ({ items, hotelId }: MenuListProps) => {
             {/* --- Image Section --- */}
             <div className="relative aspect-[4/3] overflow-hidden">
               <img
-                src={item.image || "/placeholder.svg"}
+                src={item.imageUrl ||item?.imageFileUrl || "/placeholder.svg"}
                 alt={item.name}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
@@ -109,8 +111,7 @@ const MenuList = ({ items, hotelId }: MenuListProps) => {
         <MenuDetailsModal
           item={selectedItem}
           onClose={handleCloseModal}
-          hotelId={hotelId}
-        />
+          hotelId={hotelId} tableId={tableId}        />
       )}
     </>
   )
