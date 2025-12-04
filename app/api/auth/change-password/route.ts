@@ -6,8 +6,8 @@ import bcrypt from "bcryptjs";
 
 // --- 1. POST: Change Password using Old Password (Logged in or knowing credentials) ---
 export async function POST(request: NextRequest) {
+  const { email, oldPassword, newPassword } = await request.json();
   try {
-    const { email, oldPassword, newPassword } = await request.json();
 
     if (!email || !oldPassword || !newPassword) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -16,28 +16,28 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     // 1. Find User by Email (as requested)
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email:email });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // 2. Verify Old Password
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    const isMatch = await bcrypt.compare(oldPassword, user.passwordHash);
     if (!isMatch) {
       return NextResponse.json({ error: "Incorrect old password" }, { status: 400 });
     }
 
     // 3. Hash and Save New Password
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    user.passwordHash = await bcrypt.hash(newPassword, salt);
     await user.save();
 
     return NextResponse.json({ message: "Password updated successfully" });
 
-  } catch (error) {
+  } catch (error:any) {
     console.error("Error updating password:", error);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return NextResponse.json({ error: "Update failed",message:error?.message,data:{email,newPassword,oldPassword} }, { status: 500 });
   }
 }
 

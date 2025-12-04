@@ -158,7 +158,7 @@ export default function HotelDashboard() {
             color="purple" 
           />
         </div>
-{/* <pre>{JSON.stringify(data,null,2)}</pre> */}
+        
         {/* --- Controls Toolbar --- */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col lg:flex-row gap-4 justify-between items-center sticky top-20 z-20 animate-in slide-in-from-bottom-2 duration-500">
           

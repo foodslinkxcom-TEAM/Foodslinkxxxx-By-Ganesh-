@@ -142,8 +142,8 @@ function MobileNav({ hotelId }: { hotelId: string }) {
   // Reduced items for mobile to save space
   const navItems = [
     { icon: LayoutDashboard, label: "Home", path: `/dashboard/hotels/${hotelId}` },
-    { icon: ClipboardList, label: "Orders", path: `/dashboard/hotels/${hotelId}/orders` },
     { icon: UtensilsCrossed, label: "Menu", path: `/dashboard/hotels/${hotelId}/menu` },
+    { icon: Receipt, label: "Invoices", path: `/dashboard/hotels/${hotelId}/invoices` },
     { icon: Settings, label: "Settings", path: `/dashboard/hotels/${hotelId}/settings` },
   ]
 

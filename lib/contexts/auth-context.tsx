@@ -161,13 +161,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {/* OPTIONAL: You can block rendering children entirely while loading 
         to prevent "flashes" of protected content.
       */}
-      {!loading && children}
+      {children}
       {loading && (
-         // A simple full-screen loader to prevent UI flickering during auth check
-         <div className="flex h-screen w-screen items-center justify-center bg-white">
-           <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-rose-600"></div>
-         </div>
-      )}
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/20 backdrop-blur-sm">
+    <div className="flex space-x-3">
+      {/* Dot 1 */}
+      <div className="h-6 w-6 animate-bounce rounded-full bg-rose-600 [animation-delay:-0.3s]"></div>
+      {/* Dot 2 */}
+      <div className="h-6 w-6 animate-bounce rounded-full bg-rose-600 [animation-delay:-0.15s]"></div>
+      {/* Dot 3 */}
+      <div className="h-6 w-6 animate-bounce rounded-full bg-rose-600"></div>
+    </div>
+  </div>
+)}
     </AuthContext.Provider>
   )
 }

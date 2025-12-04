@@ -49,7 +49,7 @@ export default function SuperAdminLayout({
         
 
         {/* Page Content */}
-        <div className="flex-1 md:p-8 pt-24 md:pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex-1 md:p-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {children}
         </div>
       </main>

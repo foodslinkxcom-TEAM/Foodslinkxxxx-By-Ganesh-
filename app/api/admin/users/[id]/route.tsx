@@ -1,17 +1,20 @@
-// app/api/admin/users/[id]/route.ts
-
 import { NextResponse } from 'next/server';
 import User from '@/lib/models/User';
+import Hotel from '@/lib/models/Hotel';
 import { connectDB } from '@/lib/db';
+import bcrypt from 'bcrypt';
 
+// --- GET: Fetch Single User ---
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   await connectDB();
 
   try {
     const { id } = params;
 
-    // Fetch user and populate hotel details, exclude passwordHash
-    const user = await User.findById(id).select('-passwordHash').populate('hotelId', 'name');
+    // Fetch user, populate hotel name, and exclude password
+    const user = await User.findById(id)
+      .select('-passwordHash')
+      .populate('hotelId', 'name');
 
     if (!user) {
       return NextResponse.json({ message: 'User not found.' }, { status: 404 });
@@ -24,12 +27,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
+// --- DELETE: Remove User ---
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   await connectDB();
 
   try {
     const { id } = params;
-
     const deletedUser = await User.findByIdAndDelete(id);
 
     if (!deletedUser) {
@@ -43,41 +46,66 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// --- PATCH: Update User Details ---
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   await connectDB();
 
   try {
     const { id } = params;
-    const updateData = await request.json();
+    const body = await request.json();
 
-    // If updating password, hash it first
-    if (updateData.password) {
+    // 1. Prepare Update Object
+    const updateData: any = {
+      username: body.username,
+      name: body.name,       // Explicitly handling name
+      email: body.email,
+      phone: body.phone,
+      role: body.role,
+    };
+
+    // 2. Handle Password Update (Hash it if provided)
+    if (body.password && body.password.trim() !== '') {
       const salt = await bcrypt.genSalt(10);
-      updateData.passwordHash = await bcrypt.hash(updateData.password, salt);
-      delete updateData.password; // Remove plain password
+      updateData.passwordHash = await bcrypt.hash(body.password, salt);
     }
 
-    // Optional: Validate if the new hotelId is a valid hotel
-    if (updateData.hotelId) {
-        const hotel = await Hotel.findById(updateData.hotelId);
-        if (!hotel) {
-          return NextResponse.json({ message: 'Hotel not found.' }, { status: 404 });
-        }
+    // 3. Handle Hotel Assignment
+    // If role is NOT hotel, ensure hotelId is removed (null)
+    if (body.role !== 'hotel') {
+      updateData.hotelId = null;
+    } else if (body.hotelId) {
+      // Validate the Hotel ID exists
+      const hotelExists = await Hotel.findById(body.hotelId);
+      if (!hotelExists) {
+        return NextResponse.json({ message: 'Invalid Hotel ID selected.' }, { status: 400 });
+      }
+      updateData.hotelId = body.hotelId;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
+    // 4. Perform Update
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).select('-passwordHash'); // Exclude password from response
 
     if (!updatedUser) {
       return NextResponse.json({ message: 'User not found.' }, { status: 404 });
     }
 
-    // Exclude passwordHash from the response
-    const userWithoutPassword = updatedUser.toObject();
-    delete userWithoutPassword.passwordHash;
+    return NextResponse.json({ 
+      message: 'User updated successfully.', 
+      user: updatedUser 
+    }, { status: 200 });
 
-    return NextResponse.json({ message: 'User updated successfully.', user: userWithoutPassword }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating user:', error);
+    
+    // Handle Duplicate Key Errors (e.g., duplicate username/email)
+    if (error.code === 11000) {
+      return NextResponse.json({ message: 'Username or Email already exists.' }, { status: 409 });
+    }
+
     return NextResponse.json({ message: 'Internal server error.' }, { status: 500 });
   }
 }

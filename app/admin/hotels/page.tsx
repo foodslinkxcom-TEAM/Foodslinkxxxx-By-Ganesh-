@@ -3,19 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
-  Search, 
-  Filter, 
-  ArrowUpDown, 
-  MoreVertical, 
-  Edit3, 
-  Trash2, 
-  ShieldCheck, 
-  ShieldAlert, 
-  CreditCard,
-  MapPin,
-  Star,
-  Plus,
-  X
+  Search, Filter, MapPin, Plus, 
+  MoreVertical, Edit3, Trash2, 
+  Utensils, ShieldCheck, ShieldAlert, 
+  Loader2, Building2, ChevronDown 
 } from 'lucide-react';
 
 // --- Types ---
@@ -23,38 +14,26 @@ interface Hotel {
   _id: string;
   name: string;
   address: string;
-  city: string;
-  country: string;
-  description: string;
-  pricePerNight: number;
-  rating: number;
-  verified: boolean;
-  images: string[];
-  locationVerificationRadius: number;
+  city: string; // Assuming derived from address or separate field
   plan: "free" | "basic" | "premium";
-  planExpiry: Date;
+  verified: boolean;
+  rating: number;
+  totalMenu: number; // Mock field for UI demonstration
 }
 
 export default function HotelsPage() {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Controls State
   const [searchQuery, setSearchQuery] = useState("");
-  const [planFilter, setPlanFilter] = useState<"all" | "free" | "basic" | "premium">("all");
-  const [sortBy, setSortBy] = useState<"name" | "rating" | "newest">("name");
+  const [filterPlan, setFilterPlan] = useState("all");
+  
+  // State for managing the "More" dropdown
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  // Modal State
-  const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [newPlan, setNewPlan] = useState<"free" | "basic" | "premium">("free");
-
-  // --- Fetch Data ---
   useEffect(() => {
     const fetchHotels = async () => {
       try {
-        setLoading(true);
-        const res = await fetch('/api/admin/hotels', { credentials: 'include' });
+        const res = await fetch('/api/admin/hotels');
         const data = await res.json();
         setHotels(data.hotels || []);
       } catch (error) {
@@ -66,189 +45,189 @@ export default function HotelsPage() {
     fetchHotels();
   }, []);
 
-  // --- Filter & Sort Logic ---
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null);
+    if (activeDropdown) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeDropdown]);
+
+  // --- Logic ---
   const filteredHotels = useMemo(() => {
-    let result = [...hotels];
-
-    // 1. Search
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
-      result = result.filter(h => 
-        h.name.toLowerCase().includes(lowerQuery) || 
-        h.city.toLowerCase().includes(lowerQuery)
-      );
-    }
-
-    // 2. Filter
-    if (planFilter !== 'all') {
-      result = result.filter(h => h.plan === planFilter);
-    }
-
-    // 3. Sort
-    result.sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-      return 0; // Default (usually insertion order)
+    return hotels.filter(h => {
+      const matchesSearch = h.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            h.address.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPlan = filterPlan === 'all' || h.plan === filterPlan;
+      return matchesSearch && matchesPlan;
     });
+  }, [hotels, searchQuery, filterPlan]);
 
-    return result;
-  }, [hotels, searchQuery, planFilter, sortBy]);
-
-  // --- Actions ---
-  const handleChangePlan = async () => {
-    if (!selectedHotel) return;
-
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this hotel?")) return;
+    
     try {
-      const response = await fetch(`/api/admin/hotels/${selectedHotel._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: newPlan }),
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setHotels((prev) => prev.map((h) => (h._id === selectedHotel._id ? data.hotel : h)));
-        setShowPlanModal(false);
-        setSelectedHotel(null);
+      const res = await fetch(`/api/admin/hotels/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setHotels(prev => prev.filter(h => h._id !== id));
+      } else {
+        alert("Failed to delete hotel");
       }
     } catch (error) {
-      console.error("Error changing plan:", error);
+      console.error(error);
     }
   };
 
-  const getPlanColor = (plan: string) => {
-    switch(plan) {
-      case 'premium': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'basic': return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-slate-100 text-slate-600 border-slate-200';
-    }
+  const PlanBadge = ({ plan }: { plan: string }) => {
+    const styles = {
+      premium: "bg-purple-100 text-purple-700 border-purple-200",
+      basic: "bg-red-100 text-red-700 border-red-200",
+      free: "bg-slate-100 text-slate-600 border-slate-200"
+    };
+    return (
+      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border tracking-wide ${styles[plan as keyof typeof styles] || styles.free}`}>
+        {plan}
+      </span>
+    );
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-red-600 h-10 w-10" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 pb-24 md:p-8">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 pb-20">
       
-      {/* --- Header Section --- */}
+      {/* --- Header --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Manage Hotels</h1>
-          <p className="text-slate-500 mt-1">View, edit, and manage subscription plans.</p>
+          <h1 className="text-2xl font-bold text-slate-900">Hotel Management</h1>
+          <p className="text-slate-500 text-sm mt-1">Monitor partners, manage menus, and subscriptions.</p>
         </div>
         <Link href="/admin/hotels/create">
           <button className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-red-600/20 transition-all active:scale-95">
             <Plus size={18} />
-            Add New Hotel
+            <span className="hidden sm:inline">Add Hotel</span>
           </button>
         </Link>
       </div>
 
-      {/* --- Controls Bar --- */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-        
-        {/* Search */}
-        <div className="relative w-full md:w-96">
+      {/* --- Filters & Search --- */}
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input 
             type="text" 
-            placeholder="Search by name or city..." 
+            placeholder="Search hotels by name or address..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
           />
         </div>
-
-        {/* Filters */}
-        <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-          <select 
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value as any)}
-            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-red-500 cursor-pointer hover:bg-slate-50"
-          >
-            <option value="all">All Plans</option>
-            <option value="free">Free</option>
-            <option value="basic">Basic</option>
-            <option value="premium">Premium</option>
-          </select>
-
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:border-red-500 cursor-pointer hover:bg-slate-50"
-          >
-            <option value="name">Sort: Name (A-Z)</option>
-            <option value="rating">Sort: Rating (High)</option>
-          </select>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <select 
+              value={filterPlan}
+              onChange={(e) => setFilterPlan(e.target.value)}
+              className="pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:border-red-500 outline-none appearance-none cursor-pointer hover:bg-slate-50"
+            >
+              <option value="all">All Plans</option>
+              <option value="premium">Premium</option>
+              <option value="basic">Basic</option>
+              <option value="free">Free</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
+          </div>
         </div>
       </div>
 
-      {/* --- Loading State --- */}
-      {loading && (
-        <div className="flex justify-center py-20 text-red-500">
-           Loading hotels data...
-        </div>
-      )}
-
-      {/* --- DESKTOP VIEW: Table --- */}
+      {/* --- Desktop Table View --- */}
       <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="min-w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50/50 border-b border-slate-200">
             <tr>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Hotel Name</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Location</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Current Plan</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Status</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Rating</th>
-              <th className="px-6 py-4 font-semibold text-slate-700 text-sm text-right">Actions</th>
+              <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Hotel Details</th>
+              <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Plan & Status</th>
+              <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredHotels.length === 0 && !loading && (
-               <tr><td colSpan={6} className="text-center py-10 text-slate-400">No hotels found.</td></tr>
+            {filteredHotels.length === 0 && (
+              <tr><td colSpan={3} className="px-6 py-12 text-center text-slate-400">No hotels found.</td></tr>
             )}
             {filteredHotels.map((hotel) => (
-              <tr key={hotel._id} className="hover:bg-slate-50 transition-colors group">
+              <tr key={hotel._id} className="group hover:bg-slate-50 transition-colors">
                 <td className="px-6 py-4">
-                  <div className="font-bold text-slate-900">{hotel.name}</div>
-                  <div className="text-xs text-slate-400 truncate max-w-[200px]">{hotel.description || 'No description'}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-slate-600">
-                  <div className="flex items-center gap-1"><MapPin size={14}/> {hotel.city}, {hotel.country}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getPlanColor(hotel.plan)} capitalize`}>
-                    {hotel.plan}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                      hotel.verified ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                    }`}>
-                    {hotel.verified ? <ShieldCheck size={12} /> : <ShieldAlert size={12} />}
-                    {hotel.verified ? 'Verified' : 'Unverified'}
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+                      <Building2 size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900">{hotel.name}</h3>
+                      <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                        <MapPin size={12} /> {hotel.address || 'No address provided'}
+                      </p>
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                   <div className="flex items-center gap-1 text-amber-500 font-bold text-sm">
-                      <Star size={14} fill="currentColor" /> {hotel.rating || 'N/A'}
-                   </div>
+                  <div className="flex flex-col items-start gap-2">
+                    <PlanBadge plan={hotel.plan} />
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                      {hotel.verified ? (
+                        <span className="text-green-600 flex items-center gap-1"><ShieldCheck size={12} /> Verified</span>
+                      ) : (
+                        <span className="text-amber-600 flex items-center gap-1"><ShieldAlert size={12} /> Unverified</span>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button 
-                       onClick={() => { setSelectedHotel(hotel); setNewPlan(hotel.plan); setShowPlanModal(true); }}
-                       className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                       title="Change Plan"
-                    >
-                       <CreditCard size={18} />
-                    </button>
-                    <Link href={`/admin/hotels/${hotel._id}/edit`}>
-                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
-                        <Edit3 size={18} />
+                  <div className="flex items-center justify-end gap-2">
+                    {/* View Menu Button */}
+                    <Link href={`/admin/hotels/${hotel._id}/menu`}>
+                      <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:border-red-300 hover:bg-red-50 text-slate-700 hover:text-red-700 rounded-lg text-xs font-semibold transition-all shadow-sm">
+                        <Utensils size={14} />
+                        View Menu
                       </button>
                     </Link>
-                    <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                        <Trash2 size={18} />
-                    </button>
+                    
+                    {/* Edit Button */}
+                    <Link href={`/admin/hotels/${hotel._id}/edit`}>
+                      <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded-lg transition-colors" title="Edit Details">
+                        <Edit3 size={16} />
+                      </button>
+                    </Link>
+
+                    {/* More Dropdown */}
+                    <div className="relative">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveDropdown(activeDropdown === hotel._id ? null : hotel._id);
+                        }}
+                        className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+
+                      {activeDropdown === hotel._id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-10 py-1 animation-fade-in origin-top-right">
+                          <button 
+                            onClick={() => handleDelete(hotel._id)}
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                          >
+                            <Trash2 size={16} /> Delete Hotel
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -257,117 +236,81 @@ export default function HotelsPage() {
         </table>
       </div>
 
-      {/* --- MOBILE VIEW: Cards --- */}
+      {/* --- Mobile Card View --- */}
       <div className="md:hidden space-y-4">
-        {filteredHotels.length === 0 && !loading && (
-           <div className="text-center py-10 text-slate-400">No hotels found matching your search.</div>
+        {filteredHotels.length === 0 && (
+          <div className="text-center py-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-300">
+            No hotels found.
+          </div>
         )}
         {filteredHotels.map((hotel) => (
-          <div key={hotel._id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4 relative overflow-hidden">
-            {/* Top Row: Name & Rating */}
-            <div className="flex justify-between items-start">
-               <div>
-                 <h3 className="font-bold text-lg text-slate-900">{hotel.name}</h3>
-                 <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
-                   <MapPin size={14}/> {hotel.city}
-                 </p>
-               </div>
-               <div className="flex items-center gap-1 text-amber-500 font-bold text-sm bg-amber-50 px-2 py-1 rounded-lg">
-                  <Star size={14} fill="currentColor" /> {hotel.rating || 'N/A'}
-               </div>
-            </div>
-
-            {/* Middle Row: Badges */}
-            <div className="flex gap-2 flex-wrap">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${getPlanColor(hotel.plan)} capitalize flex items-center gap-1`}>
-                 <CreditCard size={12}/> {hotel.plan}
-              </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1 ${
-                  hotel.verified ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
-                }`}>
-                {hotel.verified ? <><ShieldCheck size={12} /> Verified</> : <><ShieldAlert size={12} /> Unverified</>}
-              </span>
-            </div>
-
-            {/* Bottom Row: Actions */}
-            <div className="grid grid-cols-3 gap-2 mt-2 pt-4 border-t border-slate-100">
-               <button 
-                  onClick={() => { setSelectedHotel(hotel); setNewPlan(hotel.plan); setShowPlanModal(true); }}
-                  className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-600 bg-slate-50 rounded-lg hover:bg-purple-50 hover:text-purple-600 transition-colors"
+          <div key={hotel._id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+            {/* Card Header */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 shrink-0">
+                  <Building2 size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 line-clamp-1">{hotel.name}</h3>
+                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-1 line-clamp-1">
+                    <MapPin size={12} /> {hotel.address || 'No address'}
+                  </p>
+                </div>
+              </div>
+              
+              {/* More Dropdown (Mobile) */}
+              <div className="relative">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveDropdown(activeDropdown === hotel._id ? null : hotel._id);
+                  }}
+                  className="p-1 text-slate-400"
                 >
-                  Plan
-               </button>
-               <Link href={`/admin/hotels/${hotel._id}/edit`} className="w-full">
-                  <button className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-600 bg-slate-50 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                    Edit
-                  </button>
-               </Link>
-               <button className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-600 bg-slate-50 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors">
-                  Delete
-               </button>
+                  <MoreVertical size={20} />
+                </button>
+                {activeDropdown === hotel._id && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 z-20 py-1">
+                    <button 
+                      onClick={() => handleDelete(hotel._id)}
+                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                    >
+                      <Trash2 size={16} /> Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="flex items-center gap-2 mb-4">
+              <PlanBadge plan={hotel.plan} />
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border flex items-center gap-1 ${
+                hotel.verified ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
+                {hotel.verified ? 'Verified' : 'Pending'}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <Link href={`/admin/hotels/${hotel._id}/menu`} className="col-span-1">
+                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-sm font-semibold transition-colors">
+                  <Utensils size={16} />
+                  Menu
+                </button>
+              </Link>
+              <Link href={`/admin/hotels/${hotel._id}/edit`} className="col-span-1">
+                <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-xl text-sm font-semibold transition-colors">
+                  <Edit3 size={16} />
+                  Edit
+                </button>
+              </Link>
             </div>
           </div>
         ))}
       </div>
-
-      {/* --- Plan Change Modal --- */}
-      {showPlanModal && selectedHotel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200 relative">
-            <button 
-              onClick={() => setShowPlanModal(false)}
-              className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-red-50 hover:text-red-500 transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Subscription Plan</h2>
-              <p className="text-slate-500">Updating plan for <span className="font-semibold text-slate-800">{selectedHotel.name}</span></p>
-            </div>
-
-            <div className="space-y-3 mb-8">
-              {(["free", "basic", "premium"] as const).map((plan) => (
-                <label
-                  key={plan}
-                  className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-all duration-200 ${
-                    newPlan === plan
-                      ? 'border-red-500 bg-red-50 shadow-md ring-1 ring-red-500'
-                      : 'border-slate-200 hover:border-red-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${newPlan === plan ? 'border-red-600' : 'border-slate-300'}`}>
-                    {newPlan === plan && <div className="w-2.5 h-2.5 bg-red-600 rounded-full" />}
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-800 capitalize text-lg">{plan} Plan</span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {plan === 'free' && 'Basic visibility, 5% commission'}
-                      {plan === 'basic' && 'Priority support, 3% commission'}
-                      {plan === 'premium' && 'Zero commission, Top listing'}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPlanModal(false)}
-                className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleChangePlan}
-                className="flex-1 px-6 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95"
-              >
-                Confirm Update
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

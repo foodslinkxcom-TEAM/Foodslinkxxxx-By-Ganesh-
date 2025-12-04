@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { 
-  User, 
+  User as UserIcon, 
   MapPin, 
   Lock, 
   CreditCard, 
@@ -11,9 +11,10 @@ import {
   Save, 
   Loader2, 
   Building, 
-  Smartphone,
   ShieldAlert,
-  CheckCircle
+  CheckCircle,
+  Mail,
+  Smartphone
 } from "lucide-react";
 
 // --- Types ---
@@ -27,11 +28,17 @@ interface IHotel {
   verified: boolean;
   plan: string;
   maxTables: number;
-  maxOrdersPerTable: number;
   locationVerificationRadius: number;
   planExpiry: string;
-  email?: string;
-  phone?: string;
+}
+
+interface IUser {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  username: string;
+  role: string;
 }
 
 export default function SettingsPage() {
@@ -41,6 +48,8 @@ export default function SettingsPage() {
 
   // --- State ---
   const [hotel, setHotel] = useState<IHotel | null>(null);
+  const [user, setUser] = useState<IUser | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"general" | "security" | "billing" | "danger">("general");
@@ -50,30 +59,47 @@ export default function SettingsPage() {
 
   // --- Fetch Data ---
   useEffect(() => {
-    const fetchHotel = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`/api/hotels/${hotelId}`);
-        if (!res.ok) throw new Error("Failed to fetch data");
-        const data = await res.json();
-        setHotel(data);
+        setLoading(true);
+        
+        // 1. Fetch Hotel Details
+        const hotelRes = await fetch(`/api/hotels/${hotelId}`);
+        if (hotelRes.ok) {
+          const hotelData = await hotelRes.json();
+          setHotel(hotelData);
+        }
+
+        // 2. Fetch User Details (Linked to this hotel)
+        // Assuming an endpoint exists to get the user managing this hotel
+        const userRes = await fetch(`/api/hotels/${hotelId}/user`); 
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setUser(userData.data[0]);
+        }
+
       } catch (error) {
-        console.error(error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchHotel();
+
+    if (hotelId) fetchData();
   }, [hotelId]);
 
   // --- Handlers ---
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHotelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!hotel) return;
     const { name, value, type } = e.target;
-    setHotel({
-      ...hotel,
-      [name]: type === "number" ? Number(value) : value,
-    });
+    setHotel({ ...hotel, [name]: type === "number" ? Number(value) : value });
+  };
+
+  const handleUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
+    const { name, value } = e.target;
+    setUser({ ...user, [name]: value });
   };
 
   const handleLocation = () => {
@@ -86,7 +112,7 @@ export default function SettingsPage() {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
             });
-            alert("Location coordinates updated! Don't forget to save.");
+            alert("Coordinates updated! Click Save to apply.");
           }
         },
         (error) => alert("Error getting location: " + error.message)
@@ -98,18 +124,25 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hotel) return;
+    if (!hotel || !user) return;
     setSaving(true);
 
     try {
-      const res = await fetch(`/api/hotels/${hotelId}`, {
+      // Update Hotel
+      await fetch(`/api/hotels/${hotelId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(hotel),
       });
 
-      if (!res.ok) throw new Error("Failed to update");
-      alert("Settings saved successfully!");
+      // Update User
+      await fetch(`/api/admin/users/${user._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+
+      alert("Profile and Hotel settings saved successfully!");
     } catch (error: any) {
       alert("Update failed: " + error.message);
     } finally {
@@ -119,25 +152,36 @@ export default function SettingsPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwords.new !== passwords.confirm) {
-        alert("New passwords do not match");
+    
+    if (!user?.email) {
+        alert("User email not found. Cannot update password.");
         return;
     }
+    if (passwords.new !== passwords.confirm) {
+        alert("New passwords do not match.");
+        return;
+    }
+
     setSaving(true);
     try {
-        // Implement your password update API call here
+        const payload = {
+            email: user.email,
+            oldPassword: passwords.current,
+            newPassword: passwords.new
+        };
+
         const res = await fetch(`/api/auth/change-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                hotelId, 
-                
-                currentPassword: passwords.current, 
-                newPassword: passwords.new 
-            })
+            body: JSON.stringify(payload)
         });
-        if(!res.ok) throw new Error("Failed to change password");
-        alert("Password updated successfully");
+
+        if(!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message || "Failed to change password");
+        }
+
+        alert("Password updated successfully.");
         setPasswords({ current: "", new: "", confirm: "" });
     } catch (err: any) {
         alert(err.message);
@@ -147,13 +191,13 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-      const confirmText = prompt("Type 'DELETE' to confirm account deletion. This cannot be undone.");
+      const confirmText = prompt("Type 'DELETE' to confirm. All data including menu and orders will be lost.");
       if (confirmText === "DELETE") {
           try {
               const res = await fetch(`/api/hotels/${hotelId}`, { method: 'DELETE' });
               if (res.ok) {
-                  alert("Account deleted. Redirecting...");
-                  router.push('/');
+                  alert("Account deleted.");
+                  router.push('/admin/hotels');
               }
           } catch (err) {
               alert("Failed to delete account");
@@ -195,7 +239,7 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-          <p className="text-slate-500 mt-1">Manage your hotel profile, security, and billing.</p>
+          <p className="text-slate-500 mt-1">Manage hotel profile, user details, and security.</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -203,9 +247,9 @@ export default function SettingsPage() {
           {/* --- Sidebar Navigation --- */}
           <div className="w-full md:w-64 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-fit">
             <nav className="flex flex-col">
-              <TabButton id="general" label="General" icon={User} />
+              <TabButton id="general" label="General Profile" icon={UserIcon} />
               <TabButton id="security" label="Security" icon={Lock} />
-              <TabButton id="billing" label="Plan & Billing" icon={CreditCard} />
+              <TabButton id="billing" label="Plan & Usage" icon={CreditCard} />
               <div className="my-2 border-t border-slate-100 mx-4"></div>
               <TabButton id="danger" label="Danger Zone" icon={ShieldAlert} />
             </nav>
@@ -216,12 +260,54 @@ export default function SettingsPage() {
             
             {/* 1. GENERAL TAB */}
             {activeTab === "general" && (
-              <form onSubmit={handleSaveGeneral} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4">
+              <form onSubmit={handleSaveGeneral} className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                 
-                {/* Section: Basic Info */}
-                <div>
+                {/* User Details Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
                   <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Building size={20} className="text-rose-500" /> Basic Information
+                    <UserIcon size={20} className="text-rose-500" /> User Profile
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Full Name</label>
+                      <input 
+                        name="name" 
+                        value={user?.name || ''} 
+                        onChange={handleUserChange} 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                        <input 
+                          name="email" 
+                          value={user?.email || ''} 
+                          onChange={handleUserChange} 
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-semibold text-slate-700">Phone</label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                        <input 
+                          name="phone" 
+                          value={user?.phone || ''} 
+                          onChange={handleUserChange} 
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hotel Details Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                  <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Building size={20} className="text-rose-500" /> Hotel Details
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -229,17 +315,17 @@ export default function SettingsPage() {
                       <input 
                         name="name" 
                         value={hotel.name} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                        onChange={handleHotelChange} 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">UPI ID (For Payments)</label>
+                      <label className="text-sm font-semibold text-slate-700">UPI ID</label>
                       <input 
                         name="upiId" 
                         value={hotel.upiId} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                        onChange={handleHotelChange} 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
@@ -247,69 +333,48 @@ export default function SettingsPage() {
                       <input 
                         name="address" 
                         value={hotel.address} 
-                        onChange={handleChange} 
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all"
+                        onChange={handleHotelChange} 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-rose-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                
+                  {/* Location Section Inside Hotel Card */}
+                  <div className="mt-8 pt-6 border-t border-slate-100">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                        <MapPin size={18} /> GPS Coordinates
+                      </h3>
+                      <button 
+                        type="button" 
+                        onClick={handleLocation}
+                        className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"
+                      >
+                        Auto-Detect
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input 
+                        type="number" name="latitude" value={hotel.latitude} onChange={handleHotelChange} step="any"
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Lat"
+                      />
+                      <input 
+                        type="number" name="longitude" value={hotel.longitude} onChange={handleHotelChange} step="any"
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Long"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100"></div>
-
-                {/* Section: Location */}
-                <div>
-                  <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <MapPin size={20} className="text-rose-500" /> Location Settings
-                  </h2>
-                  
-                  <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div>
-                      <p className="text-sm font-bold text-rose-900">Update GPS Coordinates</p>
-                      <p className="text-xs text-rose-700 mt-1">Required for "Location Verified" orders.</p>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={handleLocation}
-                      className="flex items-center gap-2 px-4 py-2 bg-white text-rose-600 text-sm font-bold rounded-lg border border-rose-200 shadow-sm hover:bg-rose-100 transition-colors"
-                    >
-                      <MapPin size={16} /> Detect My Location
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Latitude</label>
-                      <input 
-                        type="number" 
-                        name="latitude" 
-                        value={hotel.latitude} 
-                        onChange={handleChange}
-                        step="any"
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-500"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold text-slate-700">Longitude</label>
-                      <input 
-                        type="number" 
-                        name="longitude" 
-                        value={hotel.longitude} 
-                        onChange={handleChange}
-                        step="any"
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-rose-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4">
+                {/* Save Button */}
+                <div className="flex justify-end">
                   <button 
                     type="submit" 
                     disabled={saving}
                     className="flex items-center gap-2 px-8 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition-all active:scale-95 disabled:opacity-70"
                   >
                     {saving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                    Save Changes
+                    Save All Changes
                   </button>
                 </div>
               </form>
@@ -318,9 +383,14 @@ export default function SettingsPage() {
             {/* 2. SECURITY TAB */}
             {activeTab === "security" && (
               <form onSubmit={handleChangePassword} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <Lock size={20} className="text-rose-500" /> Change Password
-                </h2>
+                <div>
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Lock size={20} className="text-rose-500" /> Change Password
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Updating password for <span className="font-semibold text-slate-700">{user?.email || "Current User"}</span>
+                    </p>
+                </div>
                 
                 <div className="max-w-md space-y-4">
                   <div className="space-y-2">
@@ -352,13 +422,14 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-4 border-t border-slate-100">
                   <button 
                     type="submit" 
                     disabled={saving}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-70"
                   >
-                    {saving ? "Updating..." : "Update Password"}
+                    {saving ? <Loader2 className="animate-spin" size={16}/> : null}
+                    Update Password
                   </button>
                 </div>
               </form>
@@ -375,9 +446,9 @@ export default function SettingsPage() {
                    <div className="relative z-10 flex justify-between items-start">
                       <div>
                          <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Current Plan</p>
-                         <h2 className="text-3xl font-black">{hotel.plan}</h2>
+                         <h2 className="text-3xl font-black capitalize">{hotel.plan}</h2>
                          <p className="text-slate-400 text-sm mt-2 flex items-center gap-2">
-                            <CheckCircle size={14} className="text-emerald-400"/> Status: {hotel.verified ? "Active" : "Inactive"}
+                            <CheckCircle size={14} className="text-emerald-400"/> Status: {hotel.verified ? "Verified" : "Pending Verification"}
                          </p>
                       </div>
                       <div className="text-right">
@@ -397,26 +468,17 @@ export default function SettingsPage() {
                       <div className="w-full bg-slate-200 rounded-full h-2.5">
                          <div className="bg-rose-500 h-2.5 rounded-full" style={{ width: '100%' }}></div>
                       </div>
-                      <p className="text-xs text-slate-500 mt-2">Upgrade to add more tables.</p>
                    </div>
                    
                    <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50">
                       <div className="flex justify-between items-center mb-2">
-                         <span className="font-bold text-slate-700">Location Verification</span>
-                         <span className="text-sm font-bold text-emerald-600">
-                            {hotel.verified ? "Active" : "Inactive"}
-                         </span>
+                         <span className="font-bold text-slate-700">Geofencing</span>
+                         <span className="text-sm font-bold text-emerald-600">Active</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                         GPS verification radius: {hotel.locationVerificationRadius} meters.
+                         Radius: {hotel.locationVerificationRadius} meters.
                       </p>
                    </div>
-                </div>
-
-                <div className="pt-2">
-                   <button className="px-6 py-3 border-2 border-rose-100 text-rose-600 font-bold rounded-xl hover:bg-rose-50 transition-colors w-full sm:w-auto">
-                      Upgrade Plan / Manage Payment
-                   </button>
                 </div>
               </div>
             )}
@@ -427,14 +489,10 @@ export default function SettingsPage() {
                  <h2 className="text-lg font-bold text-red-700 flex items-center gap-2 mb-4">
                     <ShieldAlert size={20} /> Danger Zone
                  </h2>
-                 <p className="text-red-600/80 mb-6 text-sm">
-                    Deleting your account is permanent. All your data, including menu items, orders, and sales history, will be wiped immediately. This action cannot be undone.
-                 </p>
-                 
                  <div className="bg-white p-4 rounded-xl border border-red-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
                         <h3 className="font-bold text-slate-800">Delete Account</h3>
-                        <p className="text-xs text-slate-500">Permanently remove your hotel from FoodsLinkX.</p>
+                        <p className="text-xs text-slate-500">Permanently remove this hotel and user.</p>
                     </div>
                     <button 
                       onClick={handleDeleteAccount}
