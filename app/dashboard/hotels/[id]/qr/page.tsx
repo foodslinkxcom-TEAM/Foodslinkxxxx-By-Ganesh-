@@ -213,7 +213,7 @@ export default function QRPage() {
                       Powered by
                     </p>
                     <p className="text-sm font-bold text-rose-600 flex items-center justify-center gap-1">
-                      foodslink.com
+                      Foodslink.com
                     </p>
                   </div>
                 </div>
@@ -244,7 +244,30 @@ export default function QRPage() {
 
               </div>
               {/* === THE CARD DESIGN END === */}
-
+              <div className='flex justify-between items-center gap-3 mt-4'>
+              <button 
+                     onClick={() => handleDownload(tableNum)}
+                     disabled={downloading === tableNum}
+                     className="bg-white text-rose-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     title="Download Image"
+                   >
+                      {downloading === tableNum ? (
+                        <div className="w-5 h-5 border-2 border-rose-200 border-t-rose-600 rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Download size={20} /> Download Qr
+                        </>
+                      )}
+                   </button>
+                   <a 
+                     href={getMenuUrl(tableNum)} 
+                     target="_blank"
+                     className="bg-slate-900 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     title="Test Link"
+                   >
+                      <ExternalLink size={20} /> Visit now
+                   </a>
+              </div>
             </div>
           ))}
         </div>
