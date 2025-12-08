@@ -28,6 +28,7 @@ const Layout = ({ children }: LayoutProps) => {
       router.push(`/dashboard/pending-verification`)
     }
     hotelName = data?.name
+    console.log(data,hotelName);
   }
 
   useEffect(()=>{
