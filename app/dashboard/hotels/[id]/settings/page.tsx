@@ -67,16 +67,17 @@ export default function SettingsPage() {
         const hotelRes = await fetch(`/api/hotels/${hotelId}`);
         if (hotelRes.ok) {
           const hotelData = await hotelRes.json();
-          setHotel(hotelData);
+          setHotel(hotelData?.hotel);
+          setUser(hotelData?.user);
         }
 
         // 2. Fetch User Details (Linked to this hotel)
         // Assuming an endpoint exists to get the user managing this hotel
-        const userRes = await fetch(`/api/hotels/${hotelId}/user`); 
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setUser(userData.data[0]);
-        }
+        // const userRes = await fetch(`/api/hotels/${hotelId}`); 
+        // if (userRes.ok) {
+        //   const userData = await userRes.json();
+        //   setUser(userData.user);
+        // }
 
       } catch (error) {
         console.error("Error fetching data:", error);

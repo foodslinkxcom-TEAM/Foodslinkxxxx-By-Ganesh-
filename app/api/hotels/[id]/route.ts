@@ -1,23 +1,24 @@
 import { connectDB } from "@/lib/db";
 import Hotel from "@/lib/models/Hotel"; // Ensure you have this model
+import User from "@/lib/models/User";
 import { NextRequest, NextResponse } from "next/server";
 
 // --- GET: Fetch Single Hotel Details ---
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // 1. Await params first
+  const { id } = await params;
   try {
     await connectDB();
-    const hotel = await Hotel.findById(params.id);
-
-    if (!hotel) {
-      return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(hotel);
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch hotel" }, { status: 500 });
+    const hotel = await Hotel.findById(id);
+    const user = await User.findOne({hotelId:hotel?._id});
+    if (!hotel) return NextResponse.json({ error: "Hotel not found",id:id || "testing id" }, { status: 404 });
+    const data = {
+      user,
+      hotel,
+    };
+    return NextResponse.json(data);
+  } catch (error:any) {
+    return NextResponse.json({ error: "Failed to fetch hotel",message:error.message,id:id || "testing id" }, { status: 500 });
   }
 }
 

@@ -24,10 +24,10 @@ const Layout = ({ children }: LayoutProps) => {
     }
     const res = await fetch(`/api/hotels/${hotelId}`)
     const data = await res.json();   
-    if(!data.verified){
+    if(!data.hotel.verified){
       router.push(`/dashboard/pending-verification`)
     }
-    hotelName = data?.name
+    hotelName = data?.hotel?.name
     console.log(data,hotelName);
   }
 

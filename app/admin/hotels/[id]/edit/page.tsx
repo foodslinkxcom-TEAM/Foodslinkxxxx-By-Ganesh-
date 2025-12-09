@@ -141,7 +141,7 @@ export default function EditHotelPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-blue-600 h-10 w-10" />
+        <Loader2 className="animate-spin text-red-600 h-10 w-10" />
       </div>
     );
   }
@@ -178,7 +178,7 @@ export default function EditHotelPage() {
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-md transition-all disabled:opacity-70"
+              className="flex items-center gap-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-md transition-all disabled:opacity-70"
             >
               {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               {saving ? 'Saving...' : 'Save Changes'}
@@ -191,7 +191,7 @@ export default function EditHotelPage() {
           {/* Section 1: General Info */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <ShieldCheck className="text-blue-500" size={20} />
+              <ShieldCheck className="text-red-500" size={20} />
               General Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,7 +201,7 @@ export default function EditHotelPage() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                 />
               </div>
               <div className="md:col-span-2">
@@ -212,7 +212,7 @@ export default function EditHotelPage() {
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                   />
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function EditHotelPage() {
                     name="upiId"
                     value={formData.upiId}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                   />
                 </div>
               </div>
@@ -252,13 +252,13 @@ export default function EditHotelPage() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                <Navigation className="text-blue-500" size={20} />
+                <Navigation className="text-red-500" size={20} />
                 Location & Geofencing
               </h2>
               <button 
                 type="button"
                 onClick={handleGetLocation}
-                className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
               >
                 <MapPin size={14} /> Get Current
               </button>
@@ -271,7 +271,7 @@ export default function EditHotelPage() {
                   name="latitude"
                   value={formData.latitude}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                 />
               </div>
               <div>
@@ -281,7 +281,7 @@ export default function EditHotelPage() {
                   name="longitude"
                   value={formData.longitude}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                 />
               </div>
               <div>
@@ -291,7 +291,7 @@ export default function EditHotelPage() {
                   name="locationVerificationRadius"
                   value={formData.locationVerificationRadius}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                 />
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function EditHotelPage() {
                     name="plan"
                     value={formData.plan}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white capitalize"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none bg-white capitalize"
                   >
                     <option value="starter">Starter</option>
                     <option value="pro">Pro</option>
@@ -326,7 +326,7 @@ export default function EditHotelPage() {
                     name="planExpiry"
                     value={formData.planExpiry}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                   />
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function EditHotelPage() {
                     name="maxTables"
                     value={formData.maxTables}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                   />
                   <p className="text-xs text-slate-500 mt-1">Maximum unique QR codes allowed</p>
                 </div>
@@ -357,7 +357,7 @@ export default function EditHotelPage() {
                     name="maxOrdersPerTable"
                     value={formData.maxOrdersPerTable}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
                   />
                   <p className="text-xs text-slate-500 mt-1">Active orders limit per session</p>
                 </div>

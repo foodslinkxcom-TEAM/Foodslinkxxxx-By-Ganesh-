@@ -5,10 +5,10 @@ import { verifyToken, getAuthCookie } from "@/lib/auth";
 import User from "@/lib/models/User";
 
 // GET hotel details for verification
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
-    const hotel = await Hotel.findById(params.id);
+    const hotel = await Hotel.findById((await params).id);
     const user = await User.findOne({hotelId:hotel._id});
     if (!hotel) return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
     const data = {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 // PATCH to update and verify hotel
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params:Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json();
@@ -33,7 +33,7 @@ export async function PATCH(
     await connectDB();
 
     const updatedHotel = await Hotel.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       {
         plan,
         planExpiry,
@@ -62,7 +62,7 @@ export async function PATCH(
 }
 
 // PUT to update hotel data
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await connectDB().startSession();
   session.startTransaction();
 
@@ -96,7 +96,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const updatedHotel = await Hotel.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       { name: name.trim(), address: address.trim(), latitude, longitude, upiId: upiId?.trim() },
       { new: true, session, runValidators: true }
     );
@@ -121,7 +121,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE to reject/delete a hotel
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const token = await getAuthCookie();
     if (!token) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -132,7 +132,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     }
 
     await connectDB();
-    const deletedHotel = await Hotel.findByIdAndDelete(params.id);
+    const deletedHotel = await Hotel.findByIdAndDelete((await params).id);
 
     if (!deletedHotel) return NextResponse.json({ error: "Hotel not found" }, { status: 404 });
 
