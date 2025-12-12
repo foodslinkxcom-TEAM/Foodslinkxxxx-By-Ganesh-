@@ -244,11 +244,11 @@ export default function QRPage() {
 
               </div>
               {/* === THE CARD DESIGN END === */}
-              <div className='flex justify-between items-center gap-3 mt-4'>
+              <div className='flex justify-between items-center gap-2 mt-4'>
               <button 
                      onClick={() => handleDownload(tableNum)}
                      disabled={downloading === tableNum}
-                     className="bg-white text-rose-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     className="bg-white text-rose-600 px-5 py-2 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                      title="Download Image"
                    >
                       {downloading === tableNum ? (
@@ -262,7 +262,7 @@ export default function QRPage() {
                    <a 
                      href={getMenuUrl(tableNum)} 
                      target="_blank"
-                     className="bg-slate-900 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                     className="bg-slate-900 text-white px-5 py-2 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
                      title="Test Link"
                    >
                       <ExternalLink size={20} /> Visit now
