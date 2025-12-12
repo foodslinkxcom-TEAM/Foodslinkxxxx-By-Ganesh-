@@ -30,8 +30,8 @@ export default function QRPage() {
         const res = await fetch(`/api/hotels/${hotelId}`)
         if (res.ok) {
            const data = await res.json()
-           setHotelData(data)
-           setMaxTables(data.maxTables || 0)
+           setHotelData(data?.hotel)
+           setMaxTables(data?.hotel?.maxTables || 0)
         }
       } catch (err) { console.error(err) } 
       finally { setLoading(false) }
