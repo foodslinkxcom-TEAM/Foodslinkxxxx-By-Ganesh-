@@ -2,7 +2,7 @@ import { connectDB } from "@/lib/db"
 import Order from "@/lib/models/Order"
 import { type NextRequest, NextResponse } from "next/server"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB()
     
@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // 2. Update both status and paymentMethod
     const order = await Order.findByIdAndUpdate(
-      params.id, 
+      (await params).id, 
       { 
         status: status || "paid", 
         paymentStatus:status || "paid", 

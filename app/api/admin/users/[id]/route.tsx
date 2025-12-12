@@ -5,11 +5,11 @@ import { connectDB } from '@/lib/db';
 import bcrypt from 'bcrypt';
 
 // --- GET: Fetch Single User ---
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   await connectDB();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Fetch user, populate hotel name, and exclude password
     const user = await User.findById(id)

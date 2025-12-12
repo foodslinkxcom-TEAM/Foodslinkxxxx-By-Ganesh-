@@ -7,11 +7,11 @@ import mongoose from "mongoose";
 // --- GET: Fetch Single Menu Item ---
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
 
     const menu = await Menu.findById(id).populate("category");
 
@@ -41,11 +41,11 @@ export async function GET(
 // --- PUT: Update Menu Item (Handles FormData for Edits) ---
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
 
     // 1. Parse FormData (sent by the Edit Page)
     const formData = await request.formData();
@@ -123,11 +123,11 @@ export async function PUT(
 // --- PATCH: Quick Update (e.g., Toggle Availability) ---
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const { id } = params;
+    const { id } = await params;
     
     // Expecting JSON for PATCH (lighter weight than FormData)
     const body = await request.json();
@@ -161,7 +161,7 @@ export async function PATCH(
 // --- DELETE: Remove Item (With Safety Checks) ---
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Ensure DB is connected before starting session
   await connectDB();
@@ -171,7 +171,7 @@ export async function DELETE(
   session.startTransaction();
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 1. Check if item exists
     const menuItem = await Menu.findById(id).session(session);

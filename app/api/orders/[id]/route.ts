@@ -2,10 +2,10 @@ import { connectDB } from "@/lib/db"
 import Order from "@/lib/models/Order"
 import { type NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params:Promise< { id: string }> }) {
   try {
     await connectDB()
-    const order = await Order.findById(params.id)
+    const order = await Order.findById((await params).id)
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
@@ -18,12 +18,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params:Promise<{ id: string }> }) {
   try {
     await connectDB()
     const data = await request.json()
 
-    const order = await Order.findByIdAndUpdate(params.id, data, { new: true })
+    const order = await Order.findByIdAndUpdate((await params).id, data, { new: true })
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
@@ -37,10 +37,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await connectDB()
-    await Order.findByIdAndDelete(params.id)
+    await Order.findByIdAndDelete((await params).id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error deleting order:", error)

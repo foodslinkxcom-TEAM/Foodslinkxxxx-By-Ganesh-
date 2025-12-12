@@ -2,7 +2,7 @@ import { connectDB } from "@/lib/db";
 import Category from "@/lib/models/Category";
 import { NextResponse } from "next/server";
 
-export async function DELETE(request: Request, { params }: { params: { id: string; categoryId: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string; categoryId: string }> }) {
   try {
     await connectDB();
     const { id: hotelId, categoryId } = params;
